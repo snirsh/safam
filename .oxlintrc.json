@@ -12,6 +12,12 @@
       "rules": {
         "no-console": "off"
       }
+    },
+    {
+      "files": ["src/app/api/**/*.ts"],
+      "rules": {
+        "no-console": "off"
+      }
     }
   ],
   "ignorePatterns": ["node_modules", ".next", "scraper"]
