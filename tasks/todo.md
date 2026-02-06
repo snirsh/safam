@@ -35,7 +35,15 @@
 - [x] Dark/light mode toggle (system default, cycles system→light→dark)
 
 ## Phase 2: Authentication (Passkeys)
-- [ ] Not started
+- [x] Install @simplewebauthn/server + jose
+- [x] WebAuthn server helpers (src/lib/auth/webauthn.ts) — registration + authentication flows
+- [x] JWT session management (src/lib/auth/session.ts) — create/verify/destroy with jose, 30-day HttpOnly cookies
+- [x] 5 API routes: register options/verify, login options/verify, logout
+- [x] Next.js middleware (src/middleware.ts) — protects dashboard, allows auth/health/webhook
+- [x] Auth layout + login page + register page (passkey-based, no passwords)
+- [x] Household logic: first user creates, second joins, third rejected (max 2)
+- [x] Dev mode bypass preserved (auto-login as first seeded user)
+- [x] Verified: typecheck + build + lint + dev mode all pass
 
 ## Phase 3: Account Management & Webhook
 - [ ] Not started

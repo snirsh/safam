@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm create:*)",
+      "Bash(pnpm config set:*)",
+      "Bash(pnpm install:*)",
+      "Bash(npx oxfmt:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm dlx shadcn@latest init:*)",
+      "Bash(pnpm dlx shadcn@latest add:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm build:*)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(node -e:*)",
+      "Bash(docker compose:*)",
+      "Bash(pnpm db:push:*)",
+      "Bash(pnpm db:seed:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(curl:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nPhase 1 complete: project bootstrap, local dev flow, demo data, theme\n\n- Next.js 16.1 + Drizzle ORM + strict TypeScript + shadcn/ui\n- Dual-driver DB \\(Neon production, postgres.js local Docker\\)\n- Full schema: 10 tables \\(households, users, accounts, transactions,\n  categories, recurring patterns, categorization rules, sync logs\\)\n- 16 parent + 59 subcategories covering Israeli household expenses\n- 132 demo transactions across 4 months with Hebrew descriptions\n- Dev-mode auth bypass for local testing\n- Dashboard with income/expenses/balance, category badges\n- Transactions page with month navigation and summary cards\n- Accounts page showing connected banks with sync status\n- Recurring page with income/expense separation and net totals\n- Categories page with parent/child grid layout\n- Dark/light/system theme toggle \\(next-themes\\)\n- Claude Code-inspired UI/UX design system \\(DESIGN.md\\)\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(ls:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(pnpm info:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

@@ -13,3 +13,10 @@ _Updated as we go. Each lesson prevents repeating the same mistake._
 7. **ESM + require() is incompatible**: With `"type": "module"` in package.json, `require()` is undefined. Use static `import` at top level and let bundlers tree-shake, or use `await import()`.
 8. **drizzle-kit doesn't load .env.local**: Use `dotenv` with explicit `{ path: ".env.local" }` in `drizzle.config.ts`.
 9. **tsx doesn't load .env.local**: Same fix — add `import { config } from "dotenv"` at the top of seed scripts.
+
+## Phase 2
+
+10. **exactOptionalPropertyTypes + WebAuthn DOM types**: The browser's `PublicKeyCredentialCreationOptions` and `PublicKeyCredentialRequestOptions` types don't allow `undefined` for optional fields like `excludeCredentials`, `allowCredentials`, `timeout`, `attestation`. When building these objects from server JSON (where optional fields may be `undefined`), construct objects with only required fields first, then conditionally add optional properties with `if (value !== undefined)` guards.
+11. **@simplewebauthn/types is deprecated**: In SimpleWebAuthn v13+, types are bundled with `@simplewebauthn/server`. Import types directly from `@simplewebauthn/server`.
+12. **Oxlint no-console in API routes**: API route error logging with `console.error` is legitimate. Add an override in `.oxlintrc.json` for `src/app/api/**/*.ts` to disable `no-console`.
+13. **Next.js 16 middleware deprecation**: `middleware.ts` still works but shows a warning about migrating to `proxy`. The functionality is the same for now.
