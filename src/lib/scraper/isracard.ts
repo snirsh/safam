@@ -1,4 +1,3 @@
-import type { Browser, Page } from "playwright-core";
 import type { IsracardCredentials, RawTransaction, ScrapeResult } from "./types";
 
 const BASE_URL = "https://digital.isracard.co.il";
@@ -20,72 +19,84 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Launch a browser appropriate for the current environment. */
-async function launchBrowser(): Promise<Browser> {
-  const { chromium } = await import("playwright-core");
+// ---------- Cookie jar ----------
 
-  // Local dev: use system Chrome/Chromium
-  if (process.env.NODE_ENV === "development") {
-    const localPath =
-      process.env["CHROME_PATH"] ??
-      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-    return chromium.launch({ executablePath: localPath, headless: true });
+/** Minimal cookie jar — extracts Set-Cookie headers and sends them on subsequent requests. */
+class CookieJar {
+  private cookies = new Map<string, string>();
+
+  addFromResponse(response: Response) {
+    const setCookies = response.headers.getSetCookie();
+    for (const header of setCookies) {
+      const nameValue = header.split(";")[0];
+      if (!nameValue) continue;
+      const eqIdx = nameValue.indexOf("=");
+      if (eqIdx === -1) continue;
+      this.cookies.set(nameValue.slice(0, eqIdx).trim(), nameValue.slice(eqIdx + 1).trim());
+    }
   }
 
-  // Vercel serverless: use @sparticuz/chromium-min
-  const chromiumMin = await import("@sparticuz/chromium-min");
-  const executablePath = await chromiumMin.default.executablePath(
-    "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar",
-  );
-  return chromium.launch({
-    executablePath,
-    args: [
-      ...chromiumMin.default.args,
-      "--disable-blink-features=AutomationControlled",
-    ],
-    headless: true,
-  });
+  toString() {
+    return Array.from(this.cookies)
+      .map(([k, v]) => `${k}=${v}`)
+      .join("; ");
+  }
 }
 
-// ---------- In-page fetch helpers ----------
+// ---------- HTTP helpers ----------
 
-function parseResponse(raw: unknown): unknown {
-  if (!raw) return null;
-  const text = raw as string;
+const COMMON_HEADERS = {
+  "Accept": "application/json, text/plain, */*",
+  "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
+} as const;
+
+function parseResponse(text: string): unknown {
   try {
     return JSON.parse(text);
   } catch {
-    // Isracard returns plain text like "Block Automation" when bot is detected
     throw new Error(`Isracard returned non-JSON response: ${text.slice(0, 100)}`);
   }
 }
 
-async function fetchPostInPage(page: Page, url: string, data: unknown): Promise<unknown> {
-  const raw = await page.evaluate(
-    async ([innerUrl, innerData]: [string, unknown]) => {
-      const res = await fetch(innerUrl, {
-        method: "POST",
-        body: JSON.stringify(innerData),
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      });
-      if (res.status === 204) return null;
-      return res.text();
+async function apiPost(jar: CookieJar, reqName: string, data: Record<string, string>): Promise<unknown> {
+  const body = new URLSearchParams(data).toString();
+
+  const response = await fetch(`${SERVICES_URL}?reqName=${reqName}`, {
+    method: "POST",
+    headers: {
+      ...COMMON_HEADERS,
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      "Cookie": jar.toString(),
+      "Referer": `${BASE_URL}/personalarea/Login`,
+      "Origin": BASE_URL,
     },
-    [url, data] as [string, unknown],
-  );
-  return parseResponse(raw);
+    body,
+    redirect: "follow",
+  });
+
+  jar.addFromResponse(response);
+
+  if (response.status === 204) return null;
+  const text = await response.text();
+  return parseResponse(text);
 }
 
-async function fetchGetInPage(page: Page, url: string): Promise<unknown> {
-  const raw = await page.evaluate(async (innerUrl: string) => {
-    const res = await fetch(innerUrl, { credentials: "include" });
-    if (res.status === 204) return null;
-    return res.text();
-  }, url);
-  return parseResponse(raw);
+async function apiGet(jar: CookieJar, url: string): Promise<unknown> {
+  const response = await fetch(url, {
+    headers: {
+      ...COMMON_HEADERS,
+      "Cookie": jar.toString(),
+      "Referer": `${BASE_URL}/personalarea/Login`,
+    },
+    redirect: "follow",
+  });
+
+  jar.addFromResponse(response);
+
+  if (response.status === 204) return null;
+  const text = await response.text();
+  return parseResponse(text);
 }
 
 // ---------- Login ----------
@@ -99,18 +110,18 @@ interface LoginResult {
   status?: string;
 }
 
-async function login(page: Page, credentials: IsracardCredentials): Promise<void> {
-  // Intercept and block anti-bot detection scripts
-  await page.route(/(detector-dom|bot-detect|fingerprint|device-?detect)/i, (route) => route.abort());
-
-  // Navigate to login page (establishes session cookies)
-  await page.goto(`${BASE_URL}/personalarea/Login`, {
-    waitUntil: "load",
-    timeout: 20_000,
+async function login(jar: CookieJar, credentials: IsracardCredentials): Promise<void> {
+  // Step 0: GET login page to establish session cookies
+  const pageRes = await fetch(`${BASE_URL}/personalarea/Login`, {
+    headers: COMMON_HEADERS,
+    redirect: "follow",
   });
+  jar.addFromResponse(pageRes);
+  // Drain body
+  await pageRes.text();
 
   // Step 1: ValidateIdData
-  const validateResult = (await fetchPostInPage(page, `${SERVICES_URL}?reqName=ValidateIdData`, {
+  const validateResult = (await apiPost(jar, "ValidateIdData", {
     id: credentials.id,
     cardSuffix: credentials.card6Digits,
     countryCode: COUNTRY_CODE,
@@ -132,7 +143,7 @@ async function login(page: Page, credentials: IsracardCredentials): Promise<void
   if (returnCode !== "1") throw new Error(`Isracard: ValidateIdData returnCode=${returnCode}`);
 
   // Step 2: performLogonI
-  const loginResult = (await fetchPostInPage(page, `${SERVICES_URL}?reqName=performLogonI`, {
+  const loginResult = (await apiPost(jar, "performLogonI", {
     KodMishtamesh: userName,
     MisparZihuy: credentials.id,
     Sisma: credentials.password,
@@ -195,7 +206,7 @@ function convertTransaction(txn: IsracardTxn, processedDate: string): RawTransac
 }
 
 async function fetchTransactionsForMonth(
-  page: Page,
+  jar: CookieJar,
   month: number,
   year: number,
 ): Promise<{ transactions: IsracardTxn[]; processedDate: string }> {
@@ -206,7 +217,7 @@ async function fetchTransactionsForMonth(
   url.searchParams.set("year", `${year}`);
   url.searchParams.set("requiredDate", "N");
 
-  const result = (await fetchGetInPage(page, url.toString())) as Record<string, unknown>;
+  const result = (await apiGet(jar, url.toString())) as Record<string, unknown>;
   if (!result) return { transactions: [], processedDate: "" };
 
   const bean = result["CardsTransactionsListBean"] as Record<string, unknown> | undefined;
@@ -232,33 +243,15 @@ async function fetchTransactionsForMonth(
 
 // ---------- Main scrape function ----------
 
-/** Scrape Isracard credit card using Playwright. */
+/** Scrape Isracard credit card via direct HTTP (no browser needed). */
 export async function scrapeIsracard(
   credentials: IsracardCredentials,
   startDate?: Date,
 ): Promise<ScrapeResult> {
-  let browser: Browser | undefined;
-
   try {
-    browser = await launchBrowser();
-    const context = await browser.newContext({
-      viewport: { width: 1024, height: 768 },
-      userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
-    });
-    const page = await context.newPage();
+    const jar = new CookieJar();
 
-    // Stealth: remove automation indicators before any navigation
-    await page.addInitScript(() => {
-      Object.defineProperty(navigator, "webdriver", { get: () => false });
-      // Remove Playwright-injected properties
-      // @ts-expect-error -- removing non-standard property
-      delete window.__playwright;
-      // @ts-expect-error -- removing non-standard property
-      delete window.__pw_manual;
-    });
-
-    await login(page, credentials);
+    await login(jar, credentials);
 
     // Determine months to scrape
     const start = startDate ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -274,7 +267,7 @@ export async function scrapeIsracard(
     const allTransactions: RawTransaction[] = [];
 
     for (const { month, year } of months) {
-      const { transactions: txns, processedDate } = await fetchTransactionsForMonth(page, month, year);
+      const { transactions: txns, processedDate } = await fetchTransactionsForMonth(jar, month, year);
 
       for (const txn of txns) {
         const converted = convertTransaction(txn, processedDate);
@@ -287,13 +280,9 @@ export async function scrapeIsracard(
       if (months.length > 1) await sleep(1000);
     }
 
-    await browser.close();
     return { success: true, transactions: allTransactions };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown Isracard error";
-    if (browser) {
-      try { await browser.close(); } catch { /* ignore */ }
-    }
     return { success: false, transactions: [], error: message };
   }
 }
