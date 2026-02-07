@@ -7,6 +7,8 @@ import { scrapeAccount } from "@/lib/scraper/runner";
 import { classifyTransactions } from "@/lib/classification/classify";
 import { detectRecurringPatterns } from "@/lib/recurring/detect";
 
+export const maxDuration = 120;
+
 /**
  * POST /api/accounts/[id]/sync
  * Manually trigger a scrape for a single account.

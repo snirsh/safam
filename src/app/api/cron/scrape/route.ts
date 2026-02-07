@@ -8,7 +8,7 @@ import type { IngestResult } from "@/lib/scraper/ingest";
 import { classifyTransactions } from "@/lib/classification/classify";
 import { detectRecurringPatterns } from "@/lib/recurring/detect";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 type AccountResult = { account: string; institution: string; status: string; added?: number };
 
