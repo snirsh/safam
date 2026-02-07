@@ -9,8 +9,8 @@ const PUBLIC_PATHS = [
   "/api/webhook/",
 ];
 
-export function middleware(request: NextRequest) {
-  // Dev mode: skip middleware entirely (rely on session.ts dev bypass)
+export function proxy(request: NextRequest) {
+  // Dev mode: skip proxy entirely (rely on session.ts dev bypass)
   if (process.env["NODE_ENV"] === "development") {
     return NextResponse.next();
   }
