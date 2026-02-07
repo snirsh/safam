@@ -7,14 +7,9 @@ import {
 import { alias } from "drizzle-orm/pg-core";
 import { requireAuth } from "@/lib/auth/session";
 import { eq } from "drizzle-orm";
-
-function formatILS(amount: number): string {
-  return new Intl.NumberFormat("he-IL", {
-    style: "currency",
-    currency: "ILS",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+import { formatILS } from "@/lib/format";
+import { PatternToggle } from "@/components/recurring/pattern-toggle";
+import { RedetectButton } from "@/components/recurring/redetect-button";
 
 const frequencyLabels: Record<string, string> = {
   weekly: "Weekly",
@@ -69,9 +64,12 @@ export default async function RecurringPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="font-mono text-xl font-bold text-foreground">
-        Recurring
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-mono text-xl font-bold text-foreground">
+          Recurring
+        </h1>
+        <RedetectButton />
+      </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
@@ -183,9 +181,7 @@ function PatternList({
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${p.isActive ? "bg-green-500" : "bg-muted-foreground"}`}
-                  />
+                  <PatternToggle patternId={p.id} isActive={p.isActive} />
                   <p className="truncate text-sm text-foreground">
                     {p.description}
                   </p>

@@ -166,23 +166,32 @@ export const categorizationRules = pgTable(
 
 // ─── Recurring Patterns ──────────────────────────────────
 
-export const recurringPatterns = pgTable("recurring_patterns", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  householdId: uuid("household_id")
-    .references(() => households.id)
-    .notNull(),
-  description: varchar("description", { length: 255 }).notNull(),
-  expectedAmount: numeric("expected_amount", { precision: 12, scale: 2 }).notNull(),
-  frequency: frequencyEnum("frequency").notNull(),
-  categoryId: uuid("category_id").references(() => categories.id),
-  accountId: uuid("account_id").references(() => financialAccounts.id),
-  lastOccurrence: timestamp("last_occurrence"),
-  nextExpectedDate: timestamp("next_expected_date"),
-  isActive: boolean("is_active").default(true).notNull(),
-  confidence: numeric("confidence", { precision: 3, scale: 2 }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+export const recurringPatterns = pgTable(
+  "recurring_patterns",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    householdId: uuid("household_id")
+      .references(() => households.id)
+      .notNull(),
+    description: varchar("description", { length: 255 }).notNull(),
+    expectedAmount: numeric("expected_amount", { precision: 12, scale: 2 }).notNull(),
+    frequency: frequencyEnum("frequency").notNull(),
+    categoryId: uuid("category_id").references(() => categories.id),
+    accountId: uuid("account_id").references(() => financialAccounts.id),
+    lastOccurrence: timestamp("last_occurrence"),
+    nextExpectedDate: timestamp("next_expected_date"),
+    isActive: boolean("is_active").default(true).notNull(),
+    confidence: numeric("confidence", { precision: 3, scale: 2 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("recurring_household_desc_idx").on(
+      table.householdId,
+      table.description,
+    ),
+  ],
+);
 
 // ─── Sync Log ────────────────────────────────────────────
 

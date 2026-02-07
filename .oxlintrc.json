@@ -24,6 +24,12 @@
       "rules": {
         "no-console": "off"
       }
+    },
+    {
+      "files": ["src/lib/recurring/**/*.ts"],
+      "rules": {
+        "no-console": "off"
+      }
     }
   ],
   "ignorePatterns": ["node_modules", ".next", "scraper"]

@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { validateWebhookKey } from "@/lib/webhook/auth";
 import { encrypt } from "@/lib/crypto/encryption";
 import { classifyTransactions } from "@/lib/classification/classify";
+import { detectRecurringPatterns } from "@/lib/recurring/detect";
 
 interface TransactionPayload {
   externalId: string;
@@ -136,13 +137,18 @@ export async function POST(request: Request) {
       completedAt: new Date(),
     });
 
-    // Classify newly inserted transactions after response is sent
+    // Classify newly inserted transactions and re-detect recurring patterns after response is sent
     if (newlyInserted.length > 0) {
       after(async () => {
         try {
           await classifyTransactions(account.householdId, newlyInserted);
         } catch (error) {
           console.error("Post-response classification failed:", error);
+        }
+        try {
+          await detectRecurringPatterns(account.householdId);
+        } catch (error) {
+          console.error("Post-response recurring detection failed:", error);
         }
       });
     }
