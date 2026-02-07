@@ -31,6 +31,7 @@ export async function scrapeAccount(
     startDate,
     combineInstallments: false,
     showBrowser: false,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
 
   // Credentials are dynamic from the DB — cast to the library's expected type
