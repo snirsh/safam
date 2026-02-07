@@ -5,6 +5,7 @@ import { eq, sql } from "drizzle-orm";
 import { INSTITUTIONS, type InstitutionKey } from "@/lib/constants/institutions";
 import { AddAccountDialog } from "@/components/accounts/add-account-dialog";
 import { AccountToggle } from "@/components/accounts/account-toggle";
+import { DeleteAccountButton } from "@/components/accounts/delete-account-button";
 
 export default async function AccountsPage() {
   const session = await requireAuth();
@@ -112,11 +113,12 @@ export default async function AccountsPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 border-t border-border pt-3">
+                <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
                   <AccountToggle
                     accountId={acct.id}
                     isActive={acct.isActive}
                   />
+                  <DeleteAccountButton accountId={acct.id} />
                 </div>
               </div>
             );

@@ -25,7 +25,12 @@
       "Bash(pnpm remove:*)",
       "Bash(pnpm info:*)",
       "Bash(git commit:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(claude mcp list:*)",
+      "mcp__vercel__list_projects",
+      "mcp__vercel__get_project",
+      "Bash(pnpm next build:*)",
+      "mcp__vercel__search_vercel_documentation"
     ]
   }
 }
