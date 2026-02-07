@@ -114,9 +114,12 @@ async function login(page: Page, credentials: IsracardCredentials): Promise<void
   await page.route("**/detector-dom.min.js", (route) => route.abort());
 
   await page.goto(`${BASE_URL}/personalarea/Login`, {
-    waitUntil: "domcontentloaded",
+    waitUntil: "load",
     timeout: 30_000,
   });
+
+  // Wait for page to stabilize (JS redirects, etc.) — best-effort with short timeout
+  await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
 
   // Human-like delay before first API call (per israeli-bank-scrapers PR #1027)
   await randomDelay(2500, 3500);
