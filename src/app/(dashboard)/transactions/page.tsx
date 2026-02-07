@@ -7,6 +7,7 @@ import { eq, sql, and, gte, lt, ilike } from "drizzle-orm";
 import { formatILS, parseMonth, monthKey, monthLabel } from "@/lib/format";
 import { FilterBar } from "@/components/transactions/filter-bar";
 import { CategorySelector } from "@/components/transactions/category-selector";
+import { ClassificationBadge } from "@/components/transactions/classification-badge";
 
 interface SearchParams {
   month?: string;
@@ -94,6 +95,7 @@ export default async function TransactionsPage({
       categoryName: categories.name,
       categoryIcon: categories.icon,
       categoryParentId: categories.parentId,
+      classificationMethod: transactions.classificationMethod,
       accountName: financialAccounts.name,
     })
     .from(transactions)
@@ -256,12 +258,15 @@ export default async function TransactionsPage({
                       {tx.description}
                     </td>
                     <td className="px-4 py-3">
-                      <CategorySelector
-                        transactionId={tx.id}
-                        currentCategoryName={tx.categoryName}
-                        currentCategoryIcon={tx.categoryIcon}
-                        categories={categoryGroups}
-                      />
+                      <div className="flex items-center">
+                        <CategorySelector
+                          transactionId={tx.id}
+                          currentCategoryName={tx.categoryName}
+                          currentCategoryIcon={tx.categoryIcon}
+                          categories={categoryGroups}
+                        />
+                        <ClassificationBadge method={tx.classificationMethod} />
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {tx.accountName}
@@ -300,6 +305,7 @@ export default async function TransactionsPage({
                         currentCategoryIcon={tx.categoryIcon}
                         categories={categoryGroups}
                       />
+                      <ClassificationBadge method={tx.classificationMethod} />
                     </div>
                   </div>
                   <span

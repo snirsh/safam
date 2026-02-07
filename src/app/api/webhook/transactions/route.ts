@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { db } from "@/lib/db";
 import { financialAccounts, transactions, syncLogs } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { validateWebhookKey } from "@/lib/webhook/auth";
 import { encrypt } from "@/lib/crypto/encryption";
+import { classifyTransactions } from "@/lib/classification/classify";
 
 interface TransactionPayload {
   externalId: string;
@@ -65,6 +66,12 @@ export async function POST(request: Request) {
 
     let added = 0;
     let duplicates = 0;
+    const newlyInserted: {
+      id: string;
+      description: string;
+      amount: string;
+      transactionType: "income" | "expense";
+    }[] = [];
 
     for (const tx of body.transactions) {
       try {
@@ -95,6 +102,15 @@ export async function POST(request: Request) {
 
         if (result.length > 0) {
           added++;
+          const inserted = result[0];
+          if (inserted) {
+            newlyInserted.push({
+              id: inserted.id,
+              description: tx.description,
+              amount: tx.amount.toString(),
+              transactionType: tx.type,
+            });
+          }
         } else {
           duplicates++;
         }
@@ -119,6 +135,17 @@ export async function POST(request: Request) {
       startedAt,
       completedAt: new Date(),
     });
+
+    // Classify newly inserted transactions after response is sent
+    if (newlyInserted.length > 0) {
+      after(async () => {
+        try {
+          await classifyTransactions(account.householdId, newlyInserted);
+        } catch (error) {
+          console.error("Post-response classification failed:", error);
+        }
+      });
+    }
 
     return NextResponse.json({ added, duplicates });
   } catch (error) {

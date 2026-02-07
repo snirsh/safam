@@ -17,6 +17,7 @@
     "db:seed": "tsx src/lib/db/seed.ts"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@neondatabase/serverless": "^0.10.0",
     "@simplewebauthn/server": "^13.2.2",
     "class-variance-authority": "^0.7.1",
