@@ -2,26 +2,39 @@ import { db } from "@/lib/db";
 import { categories } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/session";
 import { eq } from "drizzle-orm";
+import { AddCategoryDialog } from "@/components/categories/add-category-dialog";
 
 export default async function CategoriesPage() {
   const session = await requireAuth();
 
-  const parentCategories = await db
+  const allCategories = await db
     .select()
     .from(categories)
-    .where(
-      eq(categories.householdId, session.householdId),
-    )
+    .where(eq(categories.householdId, session.householdId))
     .orderBy(categories.name);
 
-  const parents = parentCategories.filter((c) => !c.parentId);
-  const children = parentCategories.filter((c) => c.parentId);
+  const parents = allCategories.filter((c) => !c.parentId);
+  const children = allCategories.filter((c) => c.parentId);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="font-mono text-xl font-bold text-foreground">
-        Categories
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-mono text-xl font-bold text-foreground">
+          Categories
+        </h1>
+        <AddCategoryDialog
+          parents={parents.map((p) => ({
+            id: p.id,
+            name: p.name,
+            icon: p.icon,
+          }))}
+        />
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        {parents.length} categories, {children.length} subcategories
+      </p>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {parents.map((parent) => {
           const subs = children.filter((c) => c.parentId === parent.id);

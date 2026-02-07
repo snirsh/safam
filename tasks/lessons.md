@@ -24,3 +24,8 @@ _Updated as we go. Each lesson prevents repeating the same mistake._
 ## Phase 3
 
 14. **Readonly tuple `includes()` strictness**: `INSTITUTIONS[key].credentials` is `readonly ["username", "password"]`. Calling `.includes(k)` where `k` is `string` fails TS2345. Fix: annotate as `readonly string[]` to widen the type before calling `.includes()`.
+
+## Phase 4
+
+15. **israeli-bank-scrapers `ScraperCredentials` type**: The library's `scrape()` expects a union type (`ScraperCredentials`), not `Record<string, string>`. Since credentials come dynamically from the DB, cast with `as ScraperCredentials`.
+16. **pnpm workspace + root scripts**: Adding `pnpm-workspace.yaml` doesn't break `pnpm run build` etc. from root — they still work. `pnpm build` shorthand also works. The `-w` flag is only needed with `pnpm add`.

@@ -7,25 +7,12 @@ import {
 } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/session";
 import { eq, sql, and, gte, lt } from "drizzle-orm";
-
-function formatILS(amount: number): string {
-  return new Intl.NumberFormat("he-IL", {
-    style: "currency",
-    currency: "ILS",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function getMonthBounds() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return { start, end };
-}
+import { formatILS, getMonthBounds } from "@/lib/format";
 
 export default async function DashboardPage() {
   const session = await requireAuth();
-  const { start, end } = getMonthBounds();
+  const now = new Date();
+  const { start, end } = getMonthBounds(now.getFullYear(), now.getMonth());
 
   // Fetch this month's transactions
   const monthlyTxns = await db

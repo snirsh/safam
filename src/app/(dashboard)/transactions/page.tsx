@@ -1,47 +1,25 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { categories, financialAccounts, transactions } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/session";
-import { eq, sql, and, gte, lt } from "drizzle-orm";
+import { eq, sql, and, gte, lt, ilike } from "drizzle-orm";
+import { formatILS, parseMonth, monthKey, monthLabel } from "@/lib/format";
+import { FilterBar } from "@/components/transactions/filter-bar";
+import { CategorySelector } from "@/components/transactions/category-selector";
 
-function formatILS(amount: number): string {
-  return new Intl.NumberFormat("he-IL", {
-    style: "currency",
-    currency: "ILS",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function parseMonth(param: string | undefined): { year: number; month: number } {
-  if (param) {
-    const match = /^(\d{4})-(\d{2})$/.exec(param);
-    if (match) {
-      const y = Number(match[1]);
-      const m = Number(match[2]);
-      if (y >= 2020 && y <= 2030 && m >= 1 && m <= 12) {
-        return { year: y, month: m - 1 };
-      }
-    }
-  }
-  const now = new Date();
-  return { year: now.getFullYear(), month: now.getMonth() };
-}
-
-function monthKey(year: number, month: number): string {
-  return `${year}-${String(month + 1).padStart(2, "0")}`;
-}
-
-function monthLabel(year: number, month: number): string {
-  return new Date(year, month, 1).toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
+interface SearchParams {
+  month?: string;
+  category?: string;
+  account?: string;
+  type?: string;
+  search?: string;
 }
 
 export default async function TransactionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const session = await requireAuth();
   const params = await searchParams;
@@ -53,7 +31,57 @@ export default async function TransactionsPage({
   const prevMonth = new Date(year, month - 1, 1);
   const nextMonth = new Date(year, month + 1, 1);
   const now = new Date();
-  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+  const isCurrentMonth =
+    year === now.getFullYear() && month === now.getMonth();
+
+  // Build filter conditions
+  const conditions = [
+    eq(transactions.householdId, session.householdId),
+    gte(transactions.date, start),
+    lt(transactions.date, end),
+  ];
+
+  if (params.category) {
+    // Also match parent category — if selected category is a parent,
+    // include all transactions with child categories too
+    const [selectedCat] = await db
+      .select({ parentId: categories.parentId })
+      .from(categories)
+      .where(eq(categories.id, params.category))
+      .limit(1);
+
+    if (selectedCat && !selectedCat.parentId) {
+      // It's a parent category — get all child IDs
+      const childCats = await db
+        .select({ id: categories.id })
+        .from(categories)
+        .where(eq(categories.parentId, params.category));
+      const allIds = [
+        params.category,
+        ...childCats.map((c) => c.id),
+      ];
+      conditions.push(
+        sql`${transactions.categoryId} IN (${sql.join(
+          allIds.map((id) => sql`${id}`),
+          sql`, `,
+        )})`,
+      );
+    } else {
+      conditions.push(eq(transactions.categoryId, params.category));
+    }
+  }
+
+  if (params.account) {
+    conditions.push(eq(transactions.accountId, params.account));
+  }
+
+  if (params.type === "income" || params.type === "expense") {
+    conditions.push(eq(transactions.transactionType, params.type));
+  }
+
+  if (params.search) {
+    conditions.push(ilike(transactions.description, `%${params.search}%`));
+  }
 
   const txns = await db
     .select({
@@ -62,8 +90,10 @@ export default async function TransactionsPage({
       amount: transactions.amount,
       type: transactions.transactionType,
       date: transactions.date,
+      categoryId: transactions.categoryId,
       categoryName: categories.name,
       categoryIcon: categories.icon,
+      categoryParentId: categories.parentId,
       accountName: financialAccounts.name,
     })
     .from(transactions)
@@ -72,13 +102,7 @@ export default async function TransactionsPage({
       financialAccounts,
       eq(transactions.accountId, financialAccounts.id),
     )
-    .where(
-      and(
-        eq(transactions.householdId, session.householdId),
-        gte(transactions.date, start),
-        lt(transactions.date, end),
-      ),
-    )
+    .where(and(...conditions))
     .orderBy(sql`${transactions.date} DESC`);
 
   const income = txns
@@ -87,6 +111,40 @@ export default async function TransactionsPage({
   const expenses = txns
     .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  // Fetch all categories for filters and category selector
+  const allCategories = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.householdId, session.householdId))
+    .orderBy(categories.name);
+
+  const parentCategories = allCategories.filter((c) => !c.parentId);
+  const childCategories = allCategories.filter((c) => c.parentId);
+
+  // For filter bar: flat list of parent categories
+  const filterCategories = parentCategories.map((p) => ({
+    id: p.id,
+    name: p.name,
+    icon: p.icon,
+  }));
+
+  // For category selector: nested groups
+  const categoryGroups = parentCategories.map((parent) => ({
+    id: parent.id,
+    name: parent.name,
+    icon: parent.icon,
+    children: childCategories
+      .filter((c) => c.parentId === parent.id)
+      .map((c) => ({ id: c.id, name: c.name, icon: c.icon })),
+  }));
+
+  // Fetch accounts for filter
+  const accountsList = await db
+    .select({ id: financialAccounts.id, name: financialAccounts.name })
+    .from(financialAccounts)
+    .where(eq(financialAccounts.householdId, session.householdId))
+    .orderBy(financialAccounts.name);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -117,6 +175,11 @@ export default async function TransactionsPage({
           )}
         </div>
       </div>
+
+      {/* Filters */}
+      <Suspense>
+        <FilterBar categories={filterCategories} accounts={accountsList} />
+      </Suspense>
 
       {/* Month summary */}
       <div className="grid grid-cols-3 gap-4">
@@ -193,15 +256,12 @@ export default async function TransactionsPage({
                       {tx.description}
                     </td>
                     <td className="px-4 py-3">
-                      {tx.categoryName ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-xs text-muted-foreground">
-                          {tx.categoryIcon} {tx.categoryName}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">
-                          —
-                        </span>
-                      )}
+                      <CategorySelector
+                        transactionId={tx.id}
+                        currentCategoryName={tx.categoryName}
+                        currentCategoryIcon={tx.categoryIcon}
+                        categories={categoryGroups}
+                      />
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {tx.accountName}
@@ -234,11 +294,12 @@ export default async function TransactionsPage({
                       <span className="font-mono text-xs text-muted-foreground">
                         {new Date(tx.date).toLocaleDateString("he-IL")}
                       </span>
-                      {tx.categoryName ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-accent px-1.5 py-0.5 text-xs text-muted-foreground">
-                          {tx.categoryIcon} {tx.categoryName}
-                        </span>
-                      ) : null}
+                      <CategorySelector
+                        transactionId={tx.id}
+                        currentCategoryName={tx.categoryName}
+                        currentCategoryIcon={tx.categoryIcon}
+                        categories={categoryGroups}
+                      />
                     </div>
                   </div>
                   <span

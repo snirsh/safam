@@ -59,7 +59,17 @@
 - [x] Verified: typecheck + build + lint all pass
 
 ## Phase 4: Bank Scraper (GitHub Actions)
-- [ ] Not started
+- [x] GET /api/webhook/accounts endpoint — returns active accounts with encrypted creds (Bearer auth)
+- [x] pnpm workspace setup (pnpm-workspace.yaml) — root app + scraper package
+- [x] Scraper package: package.json, tsconfig.json, 6 src files
+- [x] Institution → CompanyTypes mapping (scraper/src/config.ts)
+- [x] Standalone AES-256-GCM decrypt (scraper/src/crypto.ts)
+- [x] API client: fetchAccounts() + pushTransactions() (scraper/src/api-client.ts)
+- [x] Transaction transform: library format → webhook format with stable externalId (scraper/src/transform.ts)
+- [x] Single account scraper wrapper (scraper/src/scrape-account.ts)
+- [x] Main orchestrator with per-account error isolation (scraper/src/index.ts)
+- [x] GitHub Actions workflow: cron 08:00/20:00 IST + manual dispatch (.github/workflows/scrape-banks.yml)
+- [x] Verified: app typecheck + build + lint pass, scraper typecheck passes
 
 ## Phase 5: Transactions & Categories UI
 - [ ] Not started
