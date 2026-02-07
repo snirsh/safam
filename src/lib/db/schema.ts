@@ -24,6 +24,7 @@ export const frequencyEnum = pgEnum("frequency", [
   "monthly",
   "bi_monthly",
   "quarterly",
+  "semi_annual",
   "yearly",
 ]);
 

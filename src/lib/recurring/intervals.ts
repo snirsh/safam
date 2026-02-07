@@ -4,6 +4,7 @@ type Frequency =
   | "monthly"
   | "bi_monthly"
   | "quarterly"
+  | "semi_annual"
   | "yearly";
 
 export const frequencyToDays: Record<Frequency, number> = {
@@ -12,6 +13,7 @@ export const frequencyToDays: Record<Frequency, number> = {
   monthly: 30,
   bi_monthly: 60,
   quarterly: 90,
+  semi_annual: 182,
   yearly: 365,
 };
 
@@ -25,6 +27,7 @@ const FREQUENCY_RANGES: Array<{
   { min: 25, max: 38, frequency: "monthly" },
   { min: 55, max: 70, frequency: "bi_monthly" },
   { min: 80, max: 105, frequency: "quarterly" },
+  { min: 160, max: 200, frequency: "semi_annual" },
   { min: 340, max: 395, frequency: "yearly" },
 ];
 

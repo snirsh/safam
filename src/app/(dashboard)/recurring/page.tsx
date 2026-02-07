@@ -17,6 +17,7 @@ const frequencyLabels: Record<string, string> = {
   monthly: "Monthly",
   bi_monthly: "Bi-monthly",
   quarterly: "Quarterly",
+  semi_annual: "Semi-annual",
   yearly: "Yearly",
 };
 
