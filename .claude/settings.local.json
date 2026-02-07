@@ -33,7 +33,8 @@
       "mcp__vercel__search_vercel_documentation",
       "mcp__vercel__list_deployments",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(pnpm exec tsc:*)"
+      "Bash(pnpm exec tsc:*)",
+      "Bash(pnpm exec oxlint:*)"
     ]
   }
 }

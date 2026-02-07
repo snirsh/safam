@@ -39,12 +39,26 @@ async function launchBrowser(): Promise<Browser> {
   );
   return chromium.launch({
     executablePath,
-    args: chromiumMin.default.args,
+    args: [
+      ...chromiumMin.default.args,
+      "--disable-blink-features=AutomationControlled",
+    ],
     headless: true,
   });
 }
 
 // ---------- In-page fetch helpers ----------
+
+function parseResponse(raw: unknown): unknown {
+  if (!raw) return null;
+  const text = raw as string;
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Isracard returns plain text like "Block Automation" when bot is detected
+    throw new Error(`Isracard returned non-JSON response: ${text.slice(0, 100)}`);
+  }
+}
 
 async function fetchPostInPage(page: Page, url: string, data: unknown): Promise<unknown> {
   const raw = await page.evaluate(
@@ -62,7 +76,7 @@ async function fetchPostInPage(page: Page, url: string, data: unknown): Promise<
     },
     [url, data] as [string, unknown],
   );
-  return raw ? JSON.parse(raw as string) : null;
+  return parseResponse(raw);
 }
 
 async function fetchGetInPage(page: Page, url: string): Promise<unknown> {
@@ -71,7 +85,7 @@ async function fetchGetInPage(page: Page, url: string): Promise<unknown> {
     if (res.status === 204) return null;
     return res.text();
   }, url);
-  return raw ? JSON.parse(raw as string) : null;
+  return parseResponse(raw);
 }
 
 // ---------- Login ----------
@@ -86,8 +100,8 @@ interface LoginResult {
 }
 
 async function login(page: Page, credentials: IsracardCredentials): Promise<void> {
-  // Intercept and block anti-bot detection script
-  await page.route("**/detector-dom.min.js", (route) => route.abort());
+  // Intercept and block anti-bot detection scripts
+  await page.route(/(detector-dom|bot-detect|fingerprint|device-?detect)/i, (route) => route.abort());
 
   // Navigate to login page (establishes session cookies)
   await page.goto(`${BASE_URL}/personalarea/Login`, {
@@ -230,9 +244,19 @@ export async function scrapeIsracard(
     const context = await browser.newContext({
       viewport: { width: 1024, height: 768 },
       userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
     });
     const page = await context.newPage();
+
+    // Stealth: remove automation indicators before any navigation
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "webdriver", { get: () => false });
+      // Remove Playwright-injected properties
+      // @ts-expect-error -- removing non-standard property
+      delete window.__playwright;
+      // @ts-expect-error -- removing non-standard property
+      delete window.__pw_manual;
+    });
 
     await login(page, credentials);
 
