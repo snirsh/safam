@@ -2,6 +2,9 @@ import { db } from "@/lib/db";
 import { financialAccounts, syncLogs } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/session";
 import { eq, sql } from "drizzle-orm";
+import { INSTITUTIONS, type InstitutionKey } from "@/lib/constants/institutions";
+import { AddAccountDialog } from "@/components/accounts/add-account-dialog";
+import { AccountToggle } from "@/components/accounts/account-toggle";
 
 export default async function AccountsPage() {
   const session = await requireAuth();
@@ -38,17 +41,14 @@ export default async function AccountsPage() {
 
   const syncMap = new Map(latestSyncs.map((s) => [s.accountId, s]));
 
-  const institutionLabels: Record<string, string> = {
-    leumi: "Bank Leumi",
-    discount: "Bank Discount",
-    one_zero: "One Zero",
-    isracard: "Isracard",
-    cal: "Cal",
-  };
-
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="font-mono text-xl font-bold text-foreground">Accounts</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-mono text-xl font-bold text-foreground">
+          Accounts
+        </h1>
+        <AddAccountDialog />
+      </div>
 
       {accounts.length === 0 ? (
         <div className="rounded-lg border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
@@ -57,6 +57,9 @@ export default async function AccountsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {accounts.map((acct) => {
+            const label =
+              INSTITUTIONS[acct.institution as InstitutionKey]?.label ??
+              acct.institution;
             const sync = syncMap.get(acct.id);
             return (
               <div
@@ -67,7 +70,7 @@ export default async function AccountsPage() {
                   <div>
                     <p className="font-medium text-foreground">{acct.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {institutionLabels[acct.institution] ?? acct.institution}
+                      {label}
                       {acct.lastFourDigits
                         ? ` ••••${acct.lastFourDigits}`
                         : ""}
@@ -107,6 +110,13 @@ export default async function AccountsPage() {
                       </p>
                     ) : null}
                   </div>
+                </div>
+
+                <div className="mt-3 border-t border-border pt-3">
+                  <AccountToggle
+                    accountId={acct.id}
+                    isActive={acct.isActive}
+                  />
                 </div>
               </div>
             );

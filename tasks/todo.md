@@ -46,7 +46,17 @@
 - [x] Verified: typecheck + build + lint + dev mode all pass
 
 ## Phase 3: Account Management & Webhook
-- [ ] Not started
+- [x] AES-256-GCM encryption module (src/lib/crypto/encryption.ts) — encrypt/decrypt with iv:authTag:ciphertext format
+- [x] Webhook auth module (src/lib/webhook/auth.ts) — Bearer token validation with timing-safe comparison
+- [x] Institution config (src/lib/constants/institutions.ts) — 7 Israeli banks/cards with credential schemas
+- [x] Account management API: GET /api/accounts + POST /api/accounts (encrypted credentials)
+- [x] Account update API: PATCH /api/accounts/[id] (name, credentials, isActive toggle)
+- [x] Webhook endpoint: POST /api/webhook/transactions (idempotent insert, encrypted payloads, sync logging)
+- [x] shadcn dialog + select components installed
+- [x] Add Account dialog with dynamic credential fields per institution
+- [x] Account toggle (activate/deactivate) client component
+- [x] Accounts page updated: add button, toggle, shared institution config
+- [x] Verified: typecheck + build + lint all pass
 
 ## Phase 4: Bank Scraper (GitHub Actions)
 - [ ] Not started

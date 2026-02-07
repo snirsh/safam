@@ -20,3 +20,7 @@ _Updated as we go. Each lesson prevents repeating the same mistake._
 11. **@simplewebauthn/types is deprecated**: In SimpleWebAuthn v13+, types are bundled with `@simplewebauthn/server`. Import types directly from `@simplewebauthn/server`.
 12. **Oxlint no-console in API routes**: API route error logging with `console.error` is legitimate. Add an override in `.oxlintrc.json` for `src/app/api/**/*.ts` to disable `no-console`.
 13. **Next.js 16 middleware deprecation**: `middleware.ts` still works but shows a warning about migrating to `proxy`. The functionality is the same for now.
+
+## Phase 3
+
+14. **Readonly tuple `includes()` strictness**: `INSTITUTIONS[key].credentials` is `readonly ["username", "password"]`. Calling `.includes(k)` where `k` is `string` fails TS2345. Fix: annotate as `readonly string[]` to widen the type before calling `.includes()`.
