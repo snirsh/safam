@@ -7,7 +7,7 @@ import { scrapeAccount } from "@/lib/scraper/runner";
 import { classifyTransactions } from "@/lib/classification/classify";
 import { detectRecurringPatterns } from "@/lib/recurring/detect";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 /**
  * POST /api/accounts/[id]/sync

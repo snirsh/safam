@@ -1,16 +1,15 @@
 /**
- * Test script for the Isracard scraper using production credentials.
- *
- * Uses the existing db module (auto-detects Neon vs local Postgres).
- * Point DATABASE_URL to your Neon production DB to test with real credentials.
+ * Isracard scraper script — fetch transactions and optionally save to JSON.
  *
  * Usage:
- *   pnpm tsx scripts/test-isracard.ts
- *   pnpm tsx scripts/test-isracard.ts --full   # use 2-year lookback
+ *   pnpm tsx scripts/test-isracard.ts              # incremental, print only
+ *   pnpm tsx scripts/test-isracard.ts --full       # 2-year lookback, print only
+ *   pnpm tsx scripts/test-isracard.ts --full --save # 2-year lookback, save JSON
  */
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
+import { writeFileSync } from "node:fs";
 import { eq } from "drizzle-orm";
 import { db } from "../src/lib/db/index";
 import { financialAccounts } from "../src/lib/db/schema";
@@ -20,6 +19,7 @@ import type { IsracardCredentials } from "../src/lib/scraper/types";
 
 async function main() {
   const fullSync = process.argv.includes("--full");
+  const save = process.argv.includes("--save");
 
   if (!process.env["DATABASE_URL"]) throw new Error("DATABASE_URL not set");
   if (!process.env["ENCRYPTION_KEY"]) throw new Error("ENCRYPTION_KEY not set");
@@ -30,6 +30,7 @@ async function main() {
     .select({
       id: financialAccounts.id,
       name: financialAccounts.name,
+      householdId: financialAccounts.householdId,
       encryptedCredentials: financialAccounts.encryptedCredentials,
       lastSyncedAt: financialAccounts.lastSyncedAt,
     })
@@ -47,7 +48,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Found account: ${account.name} (${account.id.slice(0, 8)}...)`);
+  console.log(`Found account: ${account.name} (${account.id})`);
   console.log(`Last synced: ${account.lastSyncedAt ?? "never"}`);
 
   const credsJson = decrypt(account.encryptedCredentials);
@@ -89,6 +90,20 @@ async function main() {
     if (result.transactions.length > 5) {
       console.log(`    ... and ${result.transactions.length - 5} more`);
     }
+  }
+
+  if (save) {
+    const payload = {
+      accountId: account.id,
+      householdId: account.householdId,
+      scrapedAt: new Date().toISOString(),
+      startDate: startDate.toISOString(),
+      count: result.transactions.length,
+      transactions: result.transactions,
+    };
+    const outPath = `scripts/isracard-dump-${new Date().toISOString().slice(0, 10)}.json`;
+    writeFileSync(outPath, JSON.stringify(payload, null, 2));
+    console.log(`\nSaved to ${outPath}`);
   }
 }
 

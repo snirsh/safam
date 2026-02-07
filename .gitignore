@@ -27,6 +27,7 @@ next-env.d.ts
 
 # scraper
 scraper/node_modules/
+scripts/*-dump-*.json
 
 # debug
 npm-debug.log*
