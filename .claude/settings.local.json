@@ -24,7 +24,8 @@
       "Bash(ls:*)",
       "Bash(pnpm remove:*)",
       "Bash(pnpm info:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
