@@ -114,7 +114,7 @@ async function login(page: Page, credentials: IsracardCredentials): Promise<void
   await page.route("**/detector-dom.min.js", (route) => route.abort());
 
   await page.goto(`${BASE_URL}/personalarea/Login`, {
-    waitUntil: "networkidle",
+    waitUntil: "domcontentloaded",
     timeout: 30_000,
   });
 
