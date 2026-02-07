@@ -24,6 +24,7 @@ export async function scrapeAccount(
     householdId: string;
     encryptedCredentials: string;
     lastSyncedAt: Date | null;
+    accountType: "bank" | "credit_card";
   },
   options?: { fullSync?: boolean },
 ): Promise<ScrapeAccountResult> {
@@ -69,7 +70,7 @@ export async function scrapeAccount(
       return { status: "success", added: 0, duplicates: 0, newlyInserted: ingested.newlyInserted };
     }
 
-    const transformed = transformTransactions(result.transactions);
+    const transformed = transformTransactions(result.transactions, account.accountType);
     const ingested = await ingestTransactions(account.id, account.householdId, transformed);
 
     console.log(`[scraper] ${label}: added=${ingested.added} duplicates=${ingested.duplicates}`);

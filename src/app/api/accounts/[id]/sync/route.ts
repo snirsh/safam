@@ -29,6 +29,7 @@ export async function POST(
         encryptedCredentials: financialAccounts.encryptedCredentials,
         isActive: financialAccounts.isActive,
         lastSyncedAt: financialAccounts.lastSyncedAt,
+        accountType: financialAccounts.accountType,
       })
       .from(financialAccounts)
       .where(
@@ -62,6 +63,7 @@ export async function POST(
       householdId: account.householdId,
       encryptedCredentials: account.encryptedCredentials,
       lastSyncedAt: account.lastSyncedAt,
+      accountType: account.accountType,
     });
 
     if (result.status === "error") {

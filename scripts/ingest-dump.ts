@@ -15,6 +15,7 @@ import type { RawTransaction } from "../src/lib/scraper/types";
 interface DumpPayload {
   accountId: string;
   householdId: string;
+  accountType?: "bank" | "credit_card";
   scrapedAt: string;
   startDate: string;
   count: number;
@@ -40,7 +41,7 @@ async function main() {
   console.log(`Date range: ${payload.startDate.slice(0, 10)} → ${payload.scrapedAt.slice(0, 10)}`);
 
   console.log("\nTransforming...");
-  const transformed = transformTransactions(payload.transactions);
+  const transformed = transformTransactions(payload.transactions, payload.accountType);
   console.log(`Transformed: ${transformed.length} transactions`);
 
   console.log("\nIngesting into DB...");

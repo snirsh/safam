@@ -108,6 +108,7 @@ export function FilterBar({ categories, accounts }: FilterBarProps) {
             ["", "All"],
             ["income", "Income"],
             ["expense", "Expenses"],
+            ["transfer", "Transfers"],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -118,7 +119,7 @@ export function FilterBar({ categories, accounts }: FilterBarProps) {
               currentType === value
                 ? "bg-accent text-foreground"
                 : "text-muted-foreground hover:text-foreground"
-            } ${value === "" ? "rounded-l-md" : ""} ${value === "expense" ? "rounded-r-md" : ""}`}
+            } ${value === "" ? "rounded-l-md" : ""} ${value === "transfer" ? "rounded-r-md" : ""}`}
           >
             {label}
           </button>

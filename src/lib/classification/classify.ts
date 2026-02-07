@@ -12,7 +12,7 @@ interface NewTransaction {
   id: string;
   description: string;
   amount: string;
-  transactionType: "income" | "expense";
+  transactionType: "income" | "expense" | "transfer";
 }
 
 /**
@@ -25,6 +25,10 @@ export async function classifyTransactions(
   newTxns: NewTransaction[],
 ): Promise<void> {
   if (newTxns.length === 0) return;
+
+  // Transfers (CC payments) don't need classification
+  const classifiable = newTxns.filter((tx) => tx.transactionType !== "transfer");
+  if (classifiable.length === 0) return;
 
   // --- Tier 1: Rule-based classification ---
   let rules: CategorizationRule[];
@@ -45,7 +49,7 @@ export async function classifyTransactions(
 
   const unmatched: NewTransaction[] = [];
 
-  for (const tx of newTxns) {
+  for (const tx of classifiable) {
     const match = matchRule(rules, tx.description);
     if (match) {
       try {

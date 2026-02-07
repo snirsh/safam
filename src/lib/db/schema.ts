@@ -31,6 +31,7 @@ export const frequencyEnum = pgEnum("frequency", [
 export const transactionTypeEnum = pgEnum("transaction_type", [
   "income",
   "expense",
+  "transfer",
 ]);
 
 // ─── Households ──────────────────────────────────────────

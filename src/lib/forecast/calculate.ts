@@ -18,7 +18,7 @@ export interface PendingRecurring {
   description: string;
   expectedAmount: number;
   expectedDate: string;
-  type: "income" | "expense";
+  type: "income" | "expense" | "transfer";
   categoryName: string | null;
   categoryIcon: string | null;
 }

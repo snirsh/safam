@@ -12,7 +12,7 @@ export interface IngestResult {
     id: string;
     description: string;
     amount: string;
-    transactionType: "income" | "expense";
+    transactionType: "income" | "expense" | "transfer";
   }>;
 }
 

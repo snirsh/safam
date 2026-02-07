@@ -20,7 +20,7 @@ interface TxRow {
   date: Date;
   categoryId: string | null;
   accountId: string;
-  transactionType: "income" | "expense";
+  transactionType: "income" | "expense" | "transfer";
 }
 
 const MIN_OCCURRENCES = 3;
@@ -55,7 +55,7 @@ export async function detectRecurringPatterns(
     })
     .from(transactions)
     .where(
-      sql`${transactions.householdId} = ${householdId} AND ${transactions.date} >= ${cutoff}`,
+      sql`${transactions.householdId} = ${householdId} AND ${transactions.date} >= ${cutoff} AND ${transactions.transactionType} != 'transfer'`,
     )
     .orderBy(transactions.date);
 

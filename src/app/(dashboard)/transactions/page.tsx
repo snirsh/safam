@@ -76,7 +76,7 @@ export default async function TransactionsPage({
     conditions.push(eq(transactions.accountId, params.account));
   }
 
-  if (params.type === "income" || params.type === "expense") {
+  if (params.type === "income" || params.type === "expense" || params.type === "transfer") {
     conditions.push(eq(transactions.transactionType, params.type));
   }
 
@@ -272,9 +272,9 @@ export default async function TransactionsPage({
                       {tx.accountName}
                     </td>
                     <td
-                      className={`whitespace-nowrap px-4 py-3 text-right font-mono text-sm ${tx.type === "income" ? "text-green-500" : "text-red-500"}`}
+                      className={`whitespace-nowrap px-4 py-3 text-right font-mono text-sm ${tx.type === "income" ? "text-green-500" : tx.type === "transfer" ? "text-muted-foreground" : "text-red-500"}`}
                     >
-                      {tx.type === "income" ? "+" : "-"}
+                      {tx.type === "income" ? "+" : tx.type === "transfer" ? "" : "-"}
                       {formatILS(Math.abs(Number(tx.amount)))}
                     </td>
                   </tr>
@@ -309,9 +309,9 @@ export default async function TransactionsPage({
                     </div>
                   </div>
                   <span
-                    className={`ml-3 shrink-0 font-mono text-sm font-medium ${tx.type === "income" ? "text-green-500" : "text-red-500"}`}
+                    className={`ml-3 shrink-0 font-mono text-sm font-medium ${tx.type === "income" ? "text-green-500" : tx.type === "transfer" ? "text-muted-foreground" : "text-red-500"}`}
                   >
-                    {tx.type === "income" ? "+" : "-"}
+                    {tx.type === "income" ? "+" : tx.type === "transfer" ? "" : "-"}
                     {formatILS(Math.abs(Number(tx.amount)))}
                   </span>
                 </div>

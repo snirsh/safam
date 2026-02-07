@@ -20,7 +20,7 @@ export interface TransformedTransaction {
   originalDescription?: string;
   amount: number;
   currency?: string;
-  type: "income" | "expense";
+  type: "income" | "expense" | "transfer";
   memo?: string;
 }
 

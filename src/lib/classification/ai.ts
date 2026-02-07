@@ -12,7 +12,7 @@ interface TransactionInput {
   id: string;
   description: string;
   amount: string;
-  type: "income" | "expense";
+  type: "income" | "expense" | "transfer";
 }
 
 interface AiClassification {

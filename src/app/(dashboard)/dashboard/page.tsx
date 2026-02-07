@@ -330,9 +330,9 @@ export default async function DashboardPage() {
                   </div>
                 </div>
                 <span
-                  className={`font-mono text-sm ${tx.type === "income" ? "text-green-500" : "text-red-500"}`}
+                  className={`font-mono text-sm ${tx.type === "income" ? "text-green-500" : tx.type === "transfer" ? "text-muted-foreground" : "text-red-500"}`}
                 >
-                  {tx.type === "income" ? "+" : "-"}
+                  {tx.type === "income" ? "+" : tx.type === "transfer" ? "" : "-"}
                   {formatILS(Math.abs(Number(tx.amount)))}
                 </span>
               </div>

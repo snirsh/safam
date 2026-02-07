@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
       householdId: financialAccounts.householdId,
       encryptedCredentials: financialAccounts.encryptedCredentials,
       lastSyncedAt: financialAccounts.lastSyncedAt,
+      accountType: financialAccounts.accountType,
     })
     .from(financialAccounts)
     .where(
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
       householdId: account.householdId,
       encryptedCredentials: account.encryptedCredentials!,
       lastSyncedAt: account.lastSyncedAt,
+      accountType: account.accountType,
     });
 
     if (result.newlyInserted.length > 0) {
