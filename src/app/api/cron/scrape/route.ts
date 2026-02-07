@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
       ),
     );
 
+  console.log(`[cron/scrape] Found ${accounts.length} active accounts`);
+
   if (accounts.length === 0) {
     return NextResponse.json({ message: "No active accounts", results: [] });
   }
@@ -68,12 +70,16 @@ export async function GET(request: NextRequest) {
       }
 
       if (!result.success) {
+        console.error(`[cron/scrape] ${label}: scraper error — ${result.error}`);
         await logScrapeError(account.id, result.error ?? "Unknown error");
         results.push({ account: label, institution: account.institution, status: `error: ${result.error}` });
         continue;
       }
 
+      console.log(`[cron/scrape] ${label}: scraper returned ${result.transactions.length} transactions`);
+
       if (result.transactions.length === 0) {
+        await logScrapeError(account.id, "Scraper returned 0 transactions");
         results.push({ account: label, institution: account.institution, status: "no_transactions" });
         continue;
       }
@@ -87,6 +93,8 @@ export async function GET(request: NextRequest) {
         householdInserts.set(account.householdId, existing);
       }
 
+      console.log(`[cron/scrape] ${label}: added=${ingested.added} duplicates=${ingested.duplicates}`);
+
       results.push({
         account: label,
         institution: account.institution,
@@ -95,6 +103,7 @@ export async function GET(request: NextRequest) {
       });
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Unknown";
+      console.error(`[cron/scrape] ${label}: unhandled error — ${msg}`);
       try { await logScrapeError(account.id, msg); } catch { /* ignore */ }
       results.push({ account: label, institution: account.institution, status: `error: ${msg}` });
     }
@@ -114,5 +123,6 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  console.log(`[cron/scrape] Done. Results: ${JSON.stringify(results)}`);
   return NextResponse.json({ results });
 }

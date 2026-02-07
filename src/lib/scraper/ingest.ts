@@ -66,7 +66,8 @@ export async function ingestTransactions(
       } else {
         duplicates++;
       }
-    } catch {
+    } catch (err) {
+      console.error(`[ingest] Failed to insert tx ${tx.externalId}:`, err);
       duplicates++;
     }
   }
