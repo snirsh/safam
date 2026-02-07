@@ -1,4 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateObject } from "ai";
+import { gateway } from "@ai-sdk/gateway";
+import { z } from "zod";
 
 interface CategoryOption {
   id: string;
@@ -18,18 +20,19 @@ interface AiClassification {
   categoryId: string;
 }
 
-const MODEL_NAME = "gemini-2.0-flash";
-
-function getClient(): GoogleGenerativeAI {
-  const apiKey = process.env["GOOGLE_GENERATIVE_AI_API_KEY"];
-  if (!apiKey) {
-    throw new Error("Missing GOOGLE_GENERATIVE_AI_API_KEY");
-  }
-  return new GoogleGenerativeAI(apiKey);
-}
+const classificationSchema = z.object({
+  classifications: z.array(
+    z.object({
+      id: z.string().describe("The transaction id"),
+      categoryId: z
+        .string()
+        .describe("The chosen category id from the provided list"),
+    }),
+  ),
+});
 
 /**
- * Classify a batch of transactions using Gemini Flash.
+ * Classify a batch of transactions using Gemini Flash via Vercel AI Gateway.
  * Returns an array of transactionId → categoryId mappings.
  * Only returns valid mappings (category IDs that exist in the provided options).
  */
@@ -38,9 +41,6 @@ export async function classifyWithAi(
   categoryOptions: CategoryOption[],
 ): Promise<AiClassification[]> {
   if (txns.length === 0) return [];
-
-  const client = getClient();
-  const model = client.getGenerativeModel({ model: MODEL_NAME });
 
   const categoryList = categoryOptions
     .map((c) => {
@@ -69,10 +69,6 @@ Transactions to classify:
 ${txnList}
 ]
 
-Respond ONLY with a valid JSON array. Each element must have:
-- "id": the transaction id (string)
-- "categoryId": the chosen category id (string, must be from the list above)
-
 Pick subcategories when possible (e.g., "Groceries" not "Food").
 For Hebrew descriptions, use your knowledge of Israeli businesses:
 - סופר/שופרסל/רמי לוי/מגה = Groceries
@@ -84,36 +80,20 @@ For Hebrew descriptions, use your knowledge of Israeli businesses:
 - מקורות = Water
 - בזק/פרטנר/סלקום = Internet/Phone
 
-If you cannot determine a category, use the "Other" parent category.
-Do NOT include any text outside the JSON array.`;
+If you cannot determine a category, use the "Other" parent category.`;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
+  const { object } = await generateObject({
+    model: gateway("google/gemini-2.0-flash"),
+    schema: classificationSchema,
+    prompt,
+  });
 
-  // Strip markdown code fences if present
-  const cleaned = text
-    .replace(/```json?\n?/g, "")
-    .replace(/```\n?/g, "")
-    .trim();
-  const parsed: unknown = JSON.parse(cleaned);
-
-  if (!Array.isArray(parsed)) {
-    throw new Error("AI response is not an array");
-  }
-
+  // Post-validation: filter to only category IDs that actually exist
   const validCategoryIds = new Set(categoryOptions.map((c) => c.id));
   const results: AiClassification[] = [];
 
-  for (const item of parsed) {
-    if (
-      typeof item === "object" &&
-      item !== null &&
-      "id" in item &&
-      "categoryId" in item &&
-      typeof item.id === "string" &&
-      typeof item.categoryId === "string" &&
-      validCategoryIds.has(item.categoryId)
-    ) {
+  for (const item of object.classifications) {
+    if (validCategoryIds.has(item.categoryId)) {
       results.push({
         transactionId: item.id,
         categoryId: item.categoryId,

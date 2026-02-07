@@ -67,10 +67,13 @@ export async function classifyTransactions(
 
   if (unmatched.length === 0) return;
 
-  // --- Tier 2: AI classification (Gemini Flash) ---
-  if (!process.env["GOOGLE_GENERATIVE_AI_API_KEY"]) {
+  // --- Tier 2: AI classification (Gemini Flash via Vercel AI Gateway) ---
+  if (
+    !process.env["AI_GATEWAY_API_KEY"] &&
+    !process.env["VERCEL_OIDC_TOKEN"]
+  ) {
     console.warn(
-      "GOOGLE_GENERATIVE_AI_API_KEY not set, skipping AI classification",
+      "AI_GATEWAY_API_KEY not set, skipping AI classification",
     );
     return;
   }
