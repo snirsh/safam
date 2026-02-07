@@ -2,30 +2,37 @@ export const INSTITUTIONS = {
   leumi: {
     label: "Bank Leumi",
     credentials: ["username", "password"],
+    requiresOtp: false,
   },
   discount: {
     label: "Bank Discount",
     credentials: ["id", "password", "num"],
+    requiresOtp: false,
   },
   one_zero: {
     label: "One Zero",
     credentials: ["email", "password"],
+    requiresOtp: true,
   },
   isracard: {
     label: "Isracard",
     credentials: ["id", "card6Digits", "password"],
+    requiresOtp: false,
   },
   cal: {
     label: "Cal",
     credentials: ["username", "password"],
+    requiresOtp: false,
   },
   hapoalim: {
     label: "Bank Hapoalim",
     credentials: ["userCode", "password"],
+    requiresOtp: false,
   },
   mizrahi: {
     label: "Bank Mizrahi",
     credentials: ["username", "password"],
+    requiresOtp: false,
   },
 } as const;
 

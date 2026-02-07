@@ -1,37 +1,24 @@
 import { createHash } from "node:crypto";
-import type { Transaction } from "israeli-bank-scrapers/lib/transactions.js";
-
-interface WebhookTransaction {
-  externalId: string;
-  date: string;
-  processedDate?: string;
-  description: string;
-  originalDescription?: string;
-  amount: number;
-  currency?: string;
-  type: "income" | "expense";
-  memo?: string;
-}
+import type { RawTransaction, TransformedTransaction } from "./types";
 
 /**
  * Generate a stable externalId for deduplication.
- * Uses the library's identifier if available, otherwise hashes key fields.
+ * Uses the scraper's identifier if available, otherwise hashes key fields.
  */
-function makeExternalId(tx: Transaction): string {
+function makeExternalId(tx: RawTransaction): string {
   if (tx.identifier !== undefined && tx.identifier !== null) {
     return String(tx.identifier);
   }
-  // Fallback: hash of date + amount + description
   const raw = `${tx.date}|${tx.chargedAmount}|${tx.description}`;
   return createHash("sha256").update(raw).digest("hex").slice(0, 32);
 }
 
-/** Transform library transactions to webhook payload format. */
+/** Transform raw scraper transactions to the format expected by ingest. */
 export function transformTransactions(
-  transactions: Transaction[],
-): WebhookTransaction[] {
+  transactions: RawTransaction[],
+): TransformedTransaction[] {
   return transactions.map((tx) => {
-    const result: WebhookTransaction = {
+    const result: TransformedTransaction = {
       externalId: makeExternalId(tx),
       date: tx.date,
       description: tx.description,

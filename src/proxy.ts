@@ -6,7 +6,7 @@ const PUBLIC_PATHS = [
   "/register",
   "/api/auth/",
   "/api/health",
-  "/api/webhook/",
+  "/api/cron/",
 ];
 
 export function proxy(request: NextRequest) {
