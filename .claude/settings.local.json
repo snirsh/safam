@@ -31,7 +31,8 @@
       "mcp__vercel__get_project",
       "Bash(pnpm next build:*)",
       "mcp__vercel__search_vercel_documentation",
-      "mcp__vercel__list_deployments"
+      "mcp__vercel__list_deployments",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }
