@@ -6,6 +6,8 @@ import { INSTITUTIONS, type InstitutionKey } from "@/lib/constants/institutions"
 import { AddAccountDialog } from "@/components/accounts/add-account-dialog";
 import { AccountToggle } from "@/components/accounts/account-toggle";
 import { DeleteAccountButton } from "@/components/accounts/delete-account-button";
+import { ReauthDialog } from "@/components/accounts/reauth-dialog";
+import { SyncButton } from "@/components/accounts/sync-button";
 
 export default async function AccountsPage() {
   const session = await requireAuth();
@@ -19,6 +21,7 @@ export default async function AccountsPage() {
       lastFourDigits: financialAccounts.lastFourDigits,
       isActive: financialAccounts.isActive,
       lastSyncedAt: financialAccounts.lastSyncedAt,
+      hasCredentials: sql<boolean>`${financialAccounts.encryptedCredentials} IS NOT NULL`,
     })
     .from(financialAccounts)
     .where(eq(financialAccounts.householdId, session.householdId))
@@ -28,6 +31,7 @@ export default async function AccountsPage() {
     .select({
       accountId: syncLogs.accountId,
       status: syncLogs.status,
+      errorMessage: syncLogs.errorMessage,
       transactionsAdded: syncLogs.transactionsAdded,
       completedAt: syncLogs.completedAt,
     })
@@ -62,6 +66,10 @@ export default async function AccountsPage() {
               INSTITUTIONS[acct.institution as InstitutionKey]?.label ??
               acct.institution;
             const sync = syncMap.get(acct.id);
+            const needsReauth =
+              acct.institution === "one_zero" &&
+              sync?.status === "error" &&
+              /token|otp/i.test(sync.errorMessage ?? "");
             return (
               <div
                 key={acct.id}
@@ -105,7 +113,11 @@ export default async function AccountsPage() {
                           )
                         : "Never"}
                     </p>
-                    {sync ? (
+                    {sync?.status === "error" && sync.errorMessage ? (
+                      <p className="max-w-[200px] truncate text-xs text-destructive" title={sync.errorMessage}>
+                        Sync failed
+                      </p>
+                    ) : sync ? (
                       <p className="text-xs text-muted-foreground">
                         +{sync.transactionsAdded} txns
                       </p>
@@ -113,10 +125,17 @@ export default async function AccountsPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
                   <AccountToggle
                     accountId={acct.id}
                     isActive={acct.isActive}
+                  />
+                  {needsReauth && (
+                    <ReauthDialog accountId={acct.id} accountName={acct.name} />
+                  )}
+                  <SyncButton
+                    accountId={acct.id}
+                    disabled={!acct.hasCredentials || !acct.isActive}
                   />
                   <DeleteAccountButton accountId={acct.id} />
                 </div>

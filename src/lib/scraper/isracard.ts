@@ -35,7 +35,7 @@ async function launchBrowser(): Promise<Browser> {
   // Vercel serverless: use @sparticuz/chromium-min
   const chromiumMin = await import("@sparticuz/chromium-min");
   const executablePath = await chromiumMin.default.executablePath(
-    "https://github.com/nicholasgasior/chromium-binaries-for-lambda/releases/download/v131.0.0/chromium-v131.0.0-layer.zip",
+    "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar",
   );
   return chromium.launch({
     executablePath,
