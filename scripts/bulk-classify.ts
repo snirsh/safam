@@ -172,8 +172,8 @@ async function processHousehold(
   }
 
   // 5. Tier 2: AI classification on unique descriptions
-  if (!process.env["AI_GATEWAY_API_KEY"] && !process.env["VERCEL_OIDC_TOKEN"]) {
-    console.warn("  AI_GATEWAY_API_KEY not set, skipping AI classification");
+  if (!process.env["GOOGLE_GENERATIVE_AI_API_KEY"]) {
+    console.warn("  GOOGLE_GENERATIVE_AI_API_KEY not set, skipping AI classification");
     return;
   }
 
@@ -268,7 +268,7 @@ If you cannot determine a category, use the "Other" parent category.`;
 
     try {
       const { object } = await generateObject({
-        model: gateway("google/gemini-2.0-flash"),
+        model: google("gemini-2.0-flash"),
         schema: classificationSchema,
         prompt,
       });
