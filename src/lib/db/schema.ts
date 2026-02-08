@@ -90,6 +90,9 @@ export const financialAccounts = pgTable("financial_accounts", {
   encryptedCredentials: text("encrypted_credentials"),
   isActive: boolean("is_active").default(true).notNull(),
   lastSyncedAt: timestamp("last_synced_at"),
+  startingBalance: numeric("starting_balance", { precision: 12, scale: 2 })
+    .default("0")
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
