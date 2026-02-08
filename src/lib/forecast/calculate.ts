@@ -43,20 +43,14 @@ export async function calculateForecast(
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  // Get current month's realized totals
+  // Get all-time realized totals to calculate actual account balance
   const totals = await db
     .select({
       type: transactions.transactionType,
       total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
     })
     .from(transactions)
-    .where(
-      and(
-        eq(transactions.householdId, householdId),
-        gte(transactions.date, monthStart),
-        lt(transactions.date, monthEnd),
-      ),
-    )
+    .where(eq(transactions.householdId, householdId))
     .groupBy(transactions.transactionType);
 
   const income = Number(totals.find((t) => t.type === "income")?.total ?? 0);
