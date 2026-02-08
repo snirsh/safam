@@ -63,6 +63,7 @@ export function BalanceChart({ data }: { data: DataPoint[] }) {
             width={50}
           />
           <Tooltip
+            isAnimationActive={false}
             content={({ active, payload }) => {
               if (!active || !payload?.[0]) return null;
               const point = payload[0].payload as DataPoint;

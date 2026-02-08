@@ -47,6 +47,7 @@ export function IncomeExpensesChart({ data }: { data: MonthlyData[] }) {
             width={50}
           />
           <Tooltip
+            isAnimationActive={false}
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
               return (

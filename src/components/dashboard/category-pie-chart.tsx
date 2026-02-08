@@ -44,6 +44,7 @@ export function CategoryPieChart({ data }: { data: CategoryData[] }) {
             ))}
           </Pie>
           <Tooltip
+            isAnimationActive={false}
             content={({ active, payload }) => {
               if (!active || !payload?.[0]) return null;
               const entry = payload[0].payload as CategoryData;
