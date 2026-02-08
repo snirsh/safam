@@ -19,8 +19,9 @@ async function fixRentalIncome() {
     throw new Error("❌ Rental Income category not found in database");
   }
 
-  const categoryId = rentalIncomeCategory[0].id;
-  console.log(`✓ Found category: ${rentalIncomeCategory[0].name} (${categoryId})`);
+  const category = rentalIncomeCategory[0]!;
+  const categoryId = category.id;
+  console.log(`✓ Found category: ${category.name} (${categoryId})`);
 
   // 2. Find transactions around 4,000₪ that are currently expenses
   console.log("\n🔍 Searching for ~4,000₪ expense transactions...");
