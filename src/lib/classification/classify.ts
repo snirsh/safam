@@ -7,10 +7,7 @@ import {
 import { eq, sql } from "drizzle-orm";
 import { matchRule, type CategorizationRule } from "./rules";
 import { classifyWithAi } from "./ai";
-import {
-  isCategoryDirectionCompatible,
-  filterCategoriesByDirection,
-} from "./category-direction";
+import { isCategoryDirectionCompatible } from "./category-direction";
 
 interface NewTransaction {
   id: string;
