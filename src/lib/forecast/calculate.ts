@@ -3,7 +3,6 @@ import {
   transactions,
   recurringPatterns,
   categories,
-  financialAccounts,
 } from "@/lib/db/schema";
 import { eq, and, gte, lt, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -44,27 +43,20 @@ export async function calculateForecast(
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  // Get starting balances from all accounts
-  const accounts = await db
-    .select({
-      startingBalance: financialAccounts.startingBalance,
-    })
-    .from(financialAccounts)
-    .where(eq(financialAccounts.householdId, householdId));
-
-  const totalStartingBalance = accounts.reduce(
-    (sum, acc) => sum + Number(acc.startingBalance ?? 0),
-    0,
-  );
-
-  // Get all-time transaction totals including transfers
+  // Get current month's realized totals
   const totals = await db
     .select({
       type: transactions.transactionType,
       total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
     })
     .from(transactions)
-    .where(eq(transactions.householdId, householdId))
+    .where(
+      and(
+        eq(transactions.householdId, householdId),
+        gte(transactions.date, monthStart),
+        lt(transactions.date, monthEnd),
+      ),
+    )
     .groupBy(transactions.transactionType);
 
   const income = Number(totals.find((t) => t.type === "income")?.total ?? 0);
@@ -73,8 +65,9 @@ export async function calculateForecast(
     totals.find((t) => t.type === "transfer")?.total ?? 0,
   );
 
-  // Formula: Starting Balance + Income - Expenses - Transfers
-  const currentBalance = totalStartingBalance + income - expenses - transfers;
+  // Monthly net: Income - Expenses - Transfers
+  // (Transfers are CC payments and internal movements that reduce bank balance)
+  const currentBalance = income - expenses - transfers;
 
   // Fetch active recurring patterns with category info
   const parentCategories = alias(categories, "parent_categories");
