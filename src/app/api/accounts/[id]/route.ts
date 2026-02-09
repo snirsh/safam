@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { financialAccounts, transactions, syncLogs, recurringPatterns } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/session";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { encrypt } from "@/lib/crypto/encryption";
 
 export async function PATCH(
@@ -16,11 +16,15 @@ export async function PATCH(
       name?: string;
       credentials?: Record<string, string>;
       isActive?: boolean;
+      currentBalance?: number;
     };
 
     // Verify account belongs to household
     const [existing] = await db
-      .select({ id: financialAccounts.id })
+      .select({
+        id: financialAccounts.id,
+        accountType: financialAccounts.accountType,
+      })
       .from(financialAccounts)
       .where(
         and(
@@ -41,6 +45,33 @@ export async function PATCH(
       updates["encryptedCredentials"] = encrypt(
         JSON.stringify(body.credentials),
       );
+    }
+
+    // Balance adjustment: back-calculate startingBalance from current balance
+    if (body.currentBalance !== undefined) {
+      if (existing.accountType !== "bank") {
+        return NextResponse.json(
+          { error: "Balance adjustment is only supported for bank accounts" },
+          { status: 400 },
+        );
+      }
+
+      const [txnSum] = await db
+        .select({
+          net: sql<string>`COALESCE(SUM(
+            CASE
+              WHEN ${transactions.transactionType} = 'income' THEN ${transactions.amount}
+              WHEN ${transactions.transactionType} = 'expense' THEN -${transactions.amount}
+              WHEN ${transactions.transactionType} = 'transfer' THEN -${transactions.amount}
+              ELSE 0
+            END
+          ), 0)`,
+        })
+        .from(transactions)
+        .where(eq(transactions.accountId, id));
+
+      const transactionNet = Number(txnSum?.net ?? 0);
+      updates["startingBalance"] = String(body.currentBalance - transactionNet);
     }
 
     if (Object.keys(updates).length === 0) {

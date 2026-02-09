@@ -3,9 +3,11 @@ import {
   transactions,
   recurringPatterns,
   categories,
+  financialAccounts,
 } from "@/lib/db/schema";
-import { eq, and, gte, lt, sql } from "drizzle-orm";
+import { eq, and, gte, lt } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { calculateBankBalance, calculateCCLiability } from "@/lib/balance/calculate";
 
 export interface ForecastDataPoint {
   date: string; // YYYY-MM-DD
@@ -18,23 +20,30 @@ export interface PendingRecurring {
   description: string;
   expectedAmount: number;
   expectedDate: string;
-  type: "income" | "expense" | "transfer";
+  type: "income" | "expense";
+  accountType: "bank" | "credit_card";
   categoryName: string | null;
   categoryIcon: string | null;
 }
 
 export interface ForecastResult {
-  currentBalance: number;
+  bankBalance: number;
   projectedEndOfMonth: number;
+  isSafe: boolean;
+  ccLiability: number;
+  totalPendingBankIncome: number;
+  totalPendingBankExpenses: number;
   dataPoints: ForecastDataPoint[];
   pendingRecurring: PendingRecurring[];
-  totalPendingIncome: number;
-  totalPendingExpenses: number;
 }
 
 /**
- * Calculate a balance projection for the rest of the current month.
- * Uses realized transactions + unfulfilled recurring patterns.
+ * Calculate a bank-centric balance projection for the current month.
+ *
+ * - Starts from actual bank balance (startingBalance + all bank txns)
+ * - Projects forward using only bank recurring patterns
+ * - CC patterns are included in the list but tagged and excluded from projection
+ * - CC liability is calculated separately as informational
  */
 export async function calculateForecast(
   householdId: string,
@@ -43,33 +52,17 @@ export async function calculateForecast(
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  // Get current month's realized totals
-  const totals = await db
-    .select({
-      type: transactions.transactionType,
-      total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
-    })
-    .from(transactions)
-    .where(
-      and(
-        eq(transactions.householdId, householdId),
-        gte(transactions.date, monthStart),
-        lt(transactions.date, monthEnd),
-      ),
-    )
-    .groupBy(transactions.transactionType);
+  // 1. Actual bank balance
+  const { totalBalance: bankBalance } = await calculateBankBalance(householdId);
 
-  const income = Number(totals.find((t) => t.type === "income")?.total ?? 0);
-  const expenses = Number(totals.find((t) => t.type === "expense")?.total ?? 0);
-  const transfers = Number(
-    totals.find((t) => t.type === "transfer")?.total ?? 0,
+  // 2. CC liability this month
+  const { totalLiability: ccLiability } = await calculateCCLiability(
+    householdId,
+    monthStart,
+    monthEnd,
   );
 
-  // Monthly net: Income - Expenses - Transfers
-  // (Transfers are CC payments and internal movements that reduce bank balance)
-  const currentBalance = income - expenses - transfers;
-
-  // Fetch active recurring patterns with category info
+  // 3. Fetch active recurring patterns with category + account info
   const parentCategories = alias(categories, "parent_categories");
   const patterns = await db
     .select({
@@ -80,10 +73,15 @@ export async function calculateForecast(
       categoryName: categories.name,
       categoryIcon: categories.icon,
       parentCategoryName: parentCategories.name,
+      accountType: financialAccounts.accountType,
     })
     .from(recurringPatterns)
     .leftJoin(categories, eq(recurringPatterns.categoryId, categories.id))
     .leftJoin(parentCategories, eq(categories.parentId, parentCategories.id))
+    .leftJoin(
+      financialAccounts,
+      eq(recurringPatterns.accountId, financialAccounts.id),
+    )
     .where(
       and(
         eq(recurringPatterns.householdId, householdId),
@@ -91,7 +89,7 @@ export async function calculateForecast(
       ),
     );
 
-  // Get this month's transaction descriptions for fulfillment matching
+  // 4. Get this month's transaction descriptions for fulfillment matching
   const monthTxns = await db
     .select({
       description: transactions.description,
@@ -111,7 +109,7 @@ export async function calculateForecast(
     amount: Math.abs(Number(t.amount)),
   }));
 
-  // Determine which patterns are still pending
+  // 5. Determine which patterns are still pending
   const pendingRecurring: PendingRecurring[] = [];
 
   for (const pattern of patterns) {
@@ -120,7 +118,8 @@ export async function calculateForecast(
 
     // Check if already fulfilled this month
     const fulfilled = monthDescriptions.some((t) => {
-      const descMatch = t.desc.includes(normalizedDesc) || normalizedDesc.includes(t.desc);
+      const descMatch =
+        t.desc.includes(normalizedDesc) || normalizedDesc.includes(t.desc);
       const amountTolerance = expectedAmt * 0.2;
       const amountMatch = Math.abs(t.amount - expectedAmt) <= amountTolerance;
       return descMatch && amountMatch;
@@ -131,8 +130,6 @@ export async function calculateForecast(
     // Check if expected within current month
     const expectedDate = pattern.nextExpectedDate;
     if (!expectedDate) continue;
-
-    // Only include if the expected date is within this month
     if (expectedDate < monthStart || expectedDate >= monthEnd) continue;
 
     // Only include if it is in the future (or today)
@@ -140,6 +137,7 @@ export async function calculateForecast(
     if (expectedDate < today) continue;
 
     const isIncome = pattern.parentCategoryName === "Income";
+    const accountType = pattern.accountType ?? "bank";
 
     pendingRecurring.push({
       id: pattern.id,
@@ -147,16 +145,20 @@ export async function calculateForecast(
       expectedAmount: expectedAmt,
       expectedDate: expectedDate.toISOString().slice(0, 10),
       type: isIncome ? "income" : "expense",
+      accountType,
       categoryName: pattern.categoryName,
       categoryIcon: pattern.categoryIcon,
     });
   }
 
-  // Build daily data points from today to end of month
+  // 6. Build daily data points from today to end of month
+  //    Only BANK patterns affect the projection line
+  const bankPending = pendingRecurring.filter((p) => p.accountType === "bank");
+
   const dataPoints: ForecastDataPoint[] = [];
-  let runningBalance = currentBalance;
+  let runningBalance = bankBalance;
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const lastDay = new Date(monthEnd.getTime() - 1); // last ms of current month
+  const lastDay = new Date(monthEnd.getTime() - 1);
 
   for (
     let d = new Date(today);
@@ -165,8 +167,7 @@ export async function calculateForecast(
   ) {
     const dateStr = d.toISOString().slice(0, 10);
 
-    // Find pending recurring for this day
-    const todaysPending = pendingRecurring.filter(
+    const todaysPending = bankPending.filter(
       (p) => p.expectedDate === dateStr,
     );
 
@@ -191,23 +192,27 @@ export async function calculateForecast(
     dataPoints.push(point);
   }
 
-  const totalPendingIncome = pendingRecurring
+  // 7. Compute totals (bank only)
+  const totalPendingBankIncome = bankPending
     .filter((p) => p.type === "income")
     .reduce((sum, p) => sum + p.expectedAmount, 0);
-  const totalPendingExpenses = pendingRecurring
+  const totalPendingBankExpenses = bankPending
     .filter((p) => p.type === "expense")
     .reduce((sum, p) => sum + p.expectedAmount, 0);
 
-  const projectedEndOfMonth = dataPoints.length > 0
-    ? dataPoints[dataPoints.length - 1]!.balance
-    : currentBalance;
+  const projectedEndOfMonth =
+    dataPoints.length > 0
+      ? dataPoints[dataPoints.length - 1]!.balance
+      : bankBalance;
 
   return {
-    currentBalance: Math.round(currentBalance),
+    bankBalance: Math.round(bankBalance),
     projectedEndOfMonth,
+    isSafe: projectedEndOfMonth >= 0,
+    ccLiability,
+    totalPendingBankIncome: Math.round(totalPendingBankIncome),
+    totalPendingBankExpenses: Math.round(totalPendingBankExpenses),
     dataPoints,
     pendingRecurring,
-    totalPendingIncome: Math.round(totalPendingIncome),
-    totalPendingExpenses: Math.round(totalPendingExpenses),
   };
 }

@@ -8,6 +8,9 @@ import { AccountToggle } from "@/components/accounts/account-toggle";
 import { DeleteAccountButton } from "@/components/accounts/delete-account-button";
 import { ReauthDialog } from "@/components/accounts/reauth-dialog";
 import { SyncButton } from "@/components/accounts/sync-button";
+import { AdjustBalanceDialog } from "@/components/accounts/adjust-balance-dialog";
+import { calculateBankBalance } from "@/lib/balance/calculate";
+import { formatILS } from "@/lib/format";
 
 export default async function AccountsPage() {
   const session = await requireAuth();
@@ -46,6 +49,14 @@ export default async function AccountsPage() {
 
   const syncMap = new Map(latestSyncs.map((s) => [s.accountId, s]));
 
+  // Get bank balances
+  const { accounts: bankBalances } = await calculateBankBalance(
+    session.householdId,
+  );
+  const balanceMap = new Map(
+    bankBalances.map((b) => [b.accountId, b.balance]),
+  );
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
@@ -70,6 +81,7 @@ export default async function AccountsPage() {
               acct.institution === "one_zero" &&
               sync?.status === "error" &&
               /token|otp/i.test(sync.errorMessage ?? "");
+            const bankBalance = balanceMap.get(acct.id);
             return (
               <div
                 key={acct.id}
@@ -104,6 +116,16 @@ export default async function AccountsPage() {
                         : "Credit Card"}
                     </p>
                   </div>
+                  {bankBalance !== undefined ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Balance</p>
+                      <p
+                        className={`font-mono text-sm font-medium ${bankBalance >= 0 ? "text-green-500" : "text-red-500"}`}
+                      >
+                        {formatILS(bankBalance)}
+                      </p>
+                    </div>
+                  ) : null}
                   <div className="ml-auto text-right">
                     <p className="text-xs text-muted-foreground">Last sync</p>
                     <p className="font-mono text-sm text-foreground">
@@ -137,6 +159,12 @@ export default async function AccountsPage() {
                     accountId={acct.id}
                     disabled={!acct.hasCredentials || !acct.isActive}
                   />
+                  {acct.accountType === "bank" && (
+                    <AdjustBalanceDialog
+                      accountId={acct.id}
+                      accountName={acct.name}
+                    />
+                  )}
                   <DeleteAccountButton accountId={acct.id} />
                 </div>
               </div>

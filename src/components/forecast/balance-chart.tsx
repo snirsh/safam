@@ -28,15 +28,24 @@ export function BalanceChart({ data }: { data: DataPoint[] }) {
   const minBalance = Math.min(...data.map((d) => d.balance));
   const maxBalance = Math.max(...data.map((d) => d.balance));
   const padding = Math.max(Math.abs(maxBalance - minBalance) * 0.1, 100);
+  const hasNegative = minBalance < 0;
+
+  const strokeColor = hasNegative
+    ? "hsl(0, 84%, 60%)"
+    : "hsl(142, 76%, 36%)";
 
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
           <defs>
-            <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="balanceGradientGreen" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.3} />
               <stop offset="95%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="balanceGradientRed" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <XAxis
@@ -70,7 +79,9 @@ export function BalanceChart({ data }: { data: DataPoint[] }) {
               return (
                 <div className="rounded-md border border-border bg-card px-3 py-2 shadow-md">
                   <p className="text-xs text-muted-foreground">{point.date}</p>
-                  <p className="font-mono text-sm font-bold text-foreground">
+                  <p
+                    className={`font-mono text-sm font-bold ${point.balance >= 0 ? "text-green-500" : "text-red-500"}`}
+                  >
                     {new Intl.NumberFormat("he-IL", {
                       style: "currency",
                       currency: "ILS",
@@ -90,9 +101,10 @@ export function BalanceChart({ data }: { data: DataPoint[] }) {
           <Area
             type="monotone"
             dataKey="balance"
-            stroke="hsl(142, 76%, 36%)"
+            stroke={strokeColor}
             strokeWidth={2}
-            fill="url(#balanceGradient)"
+            fill={hasNegative ? "url(#balanceGradientRed)" : "url(#balanceGradientGreen)"}
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>

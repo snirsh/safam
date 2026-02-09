@@ -18,7 +18,7 @@ export default async function DashboardPage() {
   const now = new Date();
   const { start, end } = getMonthBounds(now.getFullYear(), now.getMonth());
 
-  // Fetch this month's transactions
+  // Fetch this month's transactions (all accounts, for spending overview)
   const monthlyTxns = await db
     .select({
       type: transactions.transactionType,
@@ -37,44 +37,40 @@ export default async function DashboardPage() {
   const income = Number(
     monthlyTxns.find((t) => t.type === "income")?.total ?? 0,
   );
-  const expenses = Math.abs(
+  const spending = Math.abs(
     Number(monthlyTxns.find((t) => t.type === "expense")?.total ?? 0),
   );
-  const balance = income - expenses;
+  const net = income - spending;
 
-  // Fetch monthly transaction count
-  const [txnCountRow] = await db
-    .select({ count: sql<string>`COUNT(*)` })
-    .from(transactions)
-    .where(
-      and(
-        eq(transactions.householdId, session.householdId),
-        gte(transactions.date, start),
-        lt(transactions.date, end),
-      ),
-    );
-  const txnCount = Number(txnCountRow?.count ?? 0);
+  // Forecast (includes bank balance, projected EOM, CC liability)
+  const forecast = await calculateForecast(session.householdId);
 
-  // Fetch category count
-  const [catCountRow] = await db
-    .select({ count: sql<string>`COUNT(*)` })
-    .from(categories)
-    .where(eq(categories.householdId, session.householdId));
-  const catCount = Number(catCountRow?.count ?? 0);
-
-  // Fetch account count
-  const [acctCountRow] = await db
-    .select({ count: sql<string>`COUNT(*)` })
-    .from(financialAccounts)
-    .where(eq(financialAccounts.householdId, session.householdId));
-  const acctCount = Number(acctCountRow?.count ?? 0);
-
-  // Fetch recurring count
-  const [recCountRow] = await db
-    .select({ count: sql<string>`COUNT(*)` })
-    .from(recurringPatterns)
-    .where(eq(recurringPatterns.householdId, session.householdId));
-  const recCount = Number(recCountRow?.count ?? 0);
+  // Stats counts
+  const [[txnCountRow], [catCountRow], [acctCountRow], [recCountRow]] =
+    await Promise.all([
+      db
+        .select({ count: sql<string>`COUNT(*)` })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.householdId, session.householdId),
+            gte(transactions.date, start),
+            lt(transactions.date, end),
+          ),
+        ),
+      db
+        .select({ count: sql<string>`COUNT(*)` })
+        .from(categories)
+        .where(eq(categories.householdId, session.householdId)),
+      db
+        .select({ count: sql<string>`COUNT(*)` })
+        .from(financialAccounts)
+        .where(eq(financialAccounts.householdId, session.householdId)),
+      db
+        .select({ count: sql<string>`COUNT(*)` })
+        .from(recurringPatterns)
+        .where(eq(recurringPatterns.householdId, session.householdId)),
+    ]);
 
   // Category breakdown for pie chart (expenses only, current month)
   const categoryBreakdown = await db
@@ -96,7 +92,6 @@ export default async function DashboardPage() {
     .groupBy(categories.name, categories.icon)
     .orderBy(sql`SUM(ABS(${transactions.amount})) DESC`);
 
-  // Top 5 + "Other"
   const top5 = categoryBreakdown.slice(0, 5);
   const rest = categoryBreakdown.slice(5);
   const otherTotal = rest.reduce((sum, c) => sum + Number(c.total), 0);
@@ -131,7 +126,6 @@ export default async function DashboardPage() {
     )
     .orderBy(sql`TO_CHAR(${transactions.date}, 'YYYY-MM') ASC`);
 
-  // Transform to chart data
   const months = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
     return {
@@ -152,9 +146,6 @@ export default async function DashboardPage() {
       ),
     ),
   }));
-
-  // Forecast summary
-  const forecast = await calculateForecast(session.householdId);
 
   // Recent transactions
   const recentTxns = await db
@@ -179,37 +170,75 @@ export default async function DashboardPage() {
         Dashboard
       </h1>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {/* Hero section: Bank Balance + Projected EOM */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border border-border bg-card px-5 py-5">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Bank Balance
+          </p>
+          <p
+            className={`mt-1 font-mono text-3xl font-bold ${forecast.bankBalance >= 0 ? "text-green-500" : "text-red-500"}`}
+          >
+            {formatILS(forecast.bankBalance)}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border bg-card px-5 py-5">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            End of Month
+          </p>
+          <p
+            className={`mt-1 font-mono text-3xl font-bold ${forecast.isSafe ? "text-green-500" : "text-red-500"}`}
+          >
+            {formatILS(forecast.projectedEndOfMonth)}
+          </p>
+          <p
+            className={`mt-1 text-xs font-medium ${forecast.isSafe ? "text-green-500" : "text-red-500"}`}
+          >
+            {forecast.isSafe ? "You're on track" : "Action needed"}
+          </p>
+        </div>
+      </div>
+
+      {/* Monthly summary cards */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <SummaryCard label="Income" value={formatILS(income)} variant="green" />
         <SummaryCard
-          label="Expenses"
-          value={formatILS(expenses)}
+          label="Spending"
+          value={formatILS(spending)}
           variant="red"
         />
         <SummaryCard
-          label="Balance"
-          value={formatILS(balance)}
-          variant={balance >= 0 ? "green" : "red"}
+          label="Net"
+          value={`${net >= 0 ? "+" : ""}${formatILS(net)}`}
+          variant={net >= 0 ? "green" : "red"}
+        />
+        <SummaryCard
+          label="CC Pending"
+          value={formatILS(forecast.ccLiability)}
+          variant="muted"
+          detail="hits bank next month"
         />
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Categories" value={String(catCount)} />
+        <StatCard
+          label="Categories"
+          value={String(Number(catCountRow?.count ?? 0))}
+        />
         <StatCard
           label="Transactions"
-          value={String(txnCount)}
+          value={String(Number(txnCountRow?.count ?? 0))}
           detail="this month"
         />
         <StatCard
           label="Accounts"
-          value={String(acctCount)}
+          value={String(Number(acctCountRow?.count ?? 0))}
           detail="connected"
         />
         <StatCard
           label="Recurring"
-          value={String(recCount)}
+          value={String(Number(recCountRow?.count ?? 0))}
           detail="detected"
         />
       </div>
@@ -235,27 +264,21 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <div className="space-y-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Projected EOM</p>
-              <p
-                className={`font-mono text-2xl font-bold ${forecast.projectedEndOfMonth >= 0 ? "text-green-500" : "text-red-500"}`}
-              >
-                {formatILS(forecast.projectedEndOfMonth)}
-              </p>
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground">Pending Income</p>
+                <p className="text-xs text-muted-foreground">
+                  Pending Bank Income
+                </p>
                 <p className="font-mono text-sm font-medium text-green-500">
-                  +{formatILS(forecast.totalPendingIncome)}
+                  +{formatILS(forecast.totalPendingBankIncome)}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">
-                  Pending Expenses
+                  Pending Bank Expenses
                 </p>
                 <p className="font-mono text-sm font-medium text-red-500">
-                  -{formatILS(forecast.totalPendingExpenses)}
+                  -{formatILS(forecast.totalPendingBankExpenses)}
                 </p>
               </div>
             </div>
@@ -267,7 +290,12 @@ export default async function DashboardPage() {
                     key={p.id}
                     className="flex items-center justify-between text-xs"
                   >
-                    <span className="truncate text-muted-foreground">
+                    <span className="flex items-center gap-1.5 truncate text-muted-foreground">
+                      <span
+                        className={`rounded px-1 py-0.5 text-[10px] font-medium ${p.accountType === "bank" ? "bg-blue-500/10 text-blue-500" : "bg-orange-500/10 text-orange-500"}`}
+                      >
+                        {p.accountType === "bank" ? "Bank" : "CC"}
+                      </span>
                       {p.description}
                     </span>
                     <span
@@ -348,21 +376,30 @@ function SummaryCard({
   label,
   value,
   variant,
+  detail,
 }: {
   label: string;
   value: string;
-  variant: "green" | "red";
+  variant: "green" | "red" | "muted";
+  detail?: string;
 }) {
+  const colorClass =
+    variant === "green"
+      ? "text-green-500"
+      : variant === "red"
+        ? "text-red-500"
+        : "text-muted-foreground";
   return (
-    <div className="rounded-lg border border-border bg-card px-4 py-4">
+    <div className="rounded-lg border border-border bg-card px-4 py-3">
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
-      <p
-        className={`mt-1 font-mono text-2xl font-bold ${variant === "green" ? "text-green-500" : "text-red-500"}`}
-      >
+      <p className={`mt-0.5 font-mono text-lg font-bold ${colorClass}`}>
         {value}
       </p>
+      {detail ? (
+        <p className="text-xs text-muted-foreground">{detail}</p>
+      ) : null}
     </div>
   );
 }
