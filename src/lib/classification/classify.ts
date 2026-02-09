@@ -7,6 +7,10 @@ import {
 import { eq, sql } from "drizzle-orm";
 import { matchRule, type CategorizationRule } from "./rules";
 import { classifyWithAi } from "./ai";
+import {
+  isCategoryDirectionCompatible,
+  filterCategoriesByDirection,
+} from "./category-direction";
 
 interface NewTransaction {
   id: string;
@@ -30,6 +34,35 @@ export async function classifyTransactions(
   const classifiable = newTxns.filter((tx) => tx.transactionType !== "transfer");
   if (classifiable.length === 0) return;
 
+  // --- Load categories (needed for direction guard in both tiers) ---
+  let categoryOptions: { id: string; name: string; parentName: string | null }[];
+  try {
+    const allCategories = await db
+      .select({
+        id: categories.id,
+        name: categories.name,
+        parentId: categories.parentId,
+      })
+      .from(categories)
+      .where(eq(categories.householdId, householdId));
+
+    const parentNameMap = new Map<string, string>();
+    for (const cat of allCategories) {
+      if (!cat.parentId) {
+        parentNameMap.set(cat.id, cat.name);
+      }
+    }
+
+    categoryOptions = allCategories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      parentName: c.parentId ? (parentNameMap.get(c.parentId) ?? null) : null,
+    }));
+  } catch (error) {
+    console.error("Failed to fetch categories for classification:", error);
+    return;
+  }
+
   // --- Tier 1: Rule-based classification ---
   let rules: CategorizationRule[];
   try {
@@ -51,7 +84,11 @@ export async function classifyTransactions(
 
   for (const tx of classifiable) {
     const match = matchRule(rules, tx.description);
-    if (match) {
+    // Direction guard: skip rule match if it assigns wrong-direction category
+    if (
+      match &&
+      isCategoryDirectionCompatible(tx.transactionType, match.categoryId, categoryOptions)
+    ) {
       try {
         await db
           .update(transactions)
@@ -82,39 +119,13 @@ export async function classifyTransactions(
     return;
   }
 
-  let categoryOptions: { id: string; name: string; parentName: string | null }[];
-  try {
-    const allCategories = await db
-      .select({
-        id: categories.id,
-        name: categories.name,
-        parentId: categories.parentId,
-      })
-      .from(categories)
-      .where(eq(categories.householdId, householdId));
-
-    const parentNameMap = new Map<string, string>();
-    for (const cat of allCategories) {
-      if (!cat.parentId) {
-        parentNameMap.set(cat.id, cat.name);
-      }
-    }
-
-    categoryOptions = allCategories.map((c) => ({
-      id: c.id,
-      name: c.name,
-      parentName: c.parentId ? (parentNameMap.get(c.parentId) ?? null) : null,
-    }));
-  } catch (error) {
-    console.error("Failed to fetch categories for AI classification:", error);
-    return;
-  }
-
-  // Batch into chunks of 20
+  // Batch into chunks of 20, group by transaction type for direction filtering
   const BATCH_SIZE = 20;
   for (let i = 0; i < unmatched.length; i += BATCH_SIZE) {
     const batch = unmatched.slice(i, i + BATCH_SIZE);
     try {
+      // Filter categories per transaction type — income txns only see income categories, etc.
+      // Since a batch may mix types, we send all categories but filter results post-hoc
       const results = await classifyWithAi(
         batch.map((tx) => ({
           id: tx.id,
@@ -125,7 +136,22 @@ export async function classifyTransactions(
         categoryOptions,
       );
 
+      // Build a lookup for batch txn types
+      const txTypeMap = new Map(batch.map((tx) => [tx.id, tx.transactionType]));
+
       for (const result of results) {
+        const txType = txTypeMap.get(result.transactionId);
+        // Direction guard: skip AI result if it assigns wrong-direction category
+        if (
+          txType &&
+          !isCategoryDirectionCompatible(txType, result.categoryId, categoryOptions)
+        ) {
+          console.warn(
+            `AI direction mismatch for tx ${result.transactionId}: ${txType} assigned to category ${result.categoryId}`,
+          );
+          continue;
+        }
+
         try {
           await db
             .update(transactions)

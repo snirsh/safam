@@ -17,6 +17,7 @@ export async function PATCH(
       credentials?: Record<string, string>;
       isActive?: boolean;
       currentBalance?: number;
+      billingDay?: number;
     };
 
     // Verify account belongs to household
@@ -45,6 +46,23 @@ export async function PATCH(
       updates["encryptedCredentials"] = encrypt(
         JSON.stringify(body.credentials),
       );
+    }
+
+    // Billing day: only for credit_card accounts, must be 1-31
+    if (body.billingDay !== undefined) {
+      if (existing.accountType !== "credit_card") {
+        return NextResponse.json(
+          { error: "Billing day is only supported for credit card accounts" },
+          { status: 400 },
+        );
+      }
+      if (!Number.isInteger(body.billingDay) || body.billingDay < 1 || body.billingDay > 31) {
+        return NextResponse.json(
+          { error: "Billing day must be an integer between 1 and 31" },
+          { status: 400 },
+        );
+      }
+      updates["billingDay"] = body.billingDay;
     }
 
     // Balance adjustment: back-calculate startingBalance from current balance

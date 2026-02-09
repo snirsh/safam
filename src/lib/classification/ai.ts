@@ -1,19 +1,20 @@
 import { generateObject } from "ai";
 import { gateway } from "@ai-sdk/gateway";
 import { z } from "zod";
+import { filterCategoriesByDirection } from "./category-direction";
 
-interface CategoryOption {
+type CategoryOption = {
   id: string;
   name: string;
   parentName: string | null;
-}
+};
 
-interface TransactionInput {
+type TransactionInput = {
   id: string;
   description: string;
   amount: string;
   type: "income" | "expense" | "transfer";
-}
+};
 
 interface AiClassification {
   transactionId: string;
@@ -42,7 +43,15 @@ export async function classifyWithAi(
 ): Promise<AiClassification[]> {
   if (txns.length === 0) return [];
 
-  const categoryList = categoryOptions
+  // Determine dominant transaction type to filter categories by direction.
+  // If mixed types, use all categories (post-hoc direction guard in classify.ts handles it).
+  const types = new Set(txns.map((t) => t.type));
+  const filteredCategories =
+    types.size === 1
+      ? filterCategoriesByDirection(txns[0]!.type, categoryOptions)
+      : categoryOptions;
+
+  const categoryList = filteredCategories
     .map((c) => {
       const label = c.parentName ? `${c.parentName} > ${c.name}` : c.name;
       return `  "${c.id}": "${label}"`;
@@ -88,8 +97,8 @@ If you cannot determine a category, use the "Other" parent category.`;
     prompt,
   });
 
-  // Post-validation: filter to only category IDs that actually exist
-  const validCategoryIds = new Set(categoryOptions.map((c) => c.id));
+  // Post-validation: filter to only category IDs that exist in the direction-filtered set
+  const validCategoryIds = new Set(filteredCategories.map((c) => c.id));
   const results: AiClassification[] = [];
 
   for (const item of object.classifications) {

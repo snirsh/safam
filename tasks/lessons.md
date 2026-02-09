@@ -29,3 +29,10 @@ _Updated as we go. Each lesson prevents repeating the same mistake._
 
 15. **israeli-bank-scrapers `ScraperCredentials` type**: The library's `scrape()` expects a union type (`ScraperCredentials`), not `Record<string, string>`. Since credentials come dynamically from the DB, cast with `as ScraperCredentials`.
 16. **pnpm workspace + root scripts**: Adding `pnpm-workspace.yaml` doesn't break `pnpm run build` etc. from root — they still work. `pnpm build` shorthand also works. The `-w` flag is only needed with `pnpm add`.
+
+## Phase 5
+
+17. **CC billing cycles ≠ calendar months**: Israeli CC billing cycles are based on a specific billing day (e.g., the 2nd of each month). Using calendar month boundaries for CC liability gives wrong totals. Solution: add `billingDay` column to accounts and compute cycle boundaries from it.
+18. **Direction guard for category assignment**: Nothing in the classification pipeline prevented assigning an income category to an expense transaction (or vice versa). This caused "Transfers" (no parent) to win over "Rental Income" (Income parent) in recurring pattern detection via `mode()`. Solution: enforce direction compatibility at three levels — rule matching, AI classification, and recurring pattern `mode()` computation.
+19. **`mode()` picks majority, not correctness**: The `mode()` function for recurring pattern categories picks the most frequent value. If historical data has more wrong-category entries than correct ones, re-detection reverts the fix. Filtering candidates by direction before `mode()` prevents this.
+20. **Neon HTTP API for ad-hoc queries**: When `pnpm`/`tsx` have network issues, use Neon's HTTP SQL API directly with `fetch()` and `node --input-type=module`. Set `Neon-Connection-String` header with the full connection string.

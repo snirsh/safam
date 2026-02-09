@@ -9,6 +9,7 @@ import { DeleteAccountButton } from "@/components/accounts/delete-account-button
 import { ReauthDialog } from "@/components/accounts/reauth-dialog";
 import { SyncButton } from "@/components/accounts/sync-button";
 import { AdjustBalanceDialog } from "@/components/accounts/adjust-balance-dialog";
+import { SetBillingDayDialog } from "@/components/accounts/set-billing-day-dialog";
 import { calculateBankBalance } from "@/lib/balance/calculate";
 import { formatILS } from "@/lib/format";
 
@@ -24,6 +25,7 @@ export default async function AccountsPage() {
       lastFourDigits: financialAccounts.lastFourDigits,
       isActive: financialAccounts.isActive,
       lastSyncedAt: financialAccounts.lastSyncedAt,
+      billingDay: financialAccounts.billingDay,
       hasCredentials: sql<boolean>`${financialAccounts.encryptedCredentials} IS NOT NULL`,
     })
     .from(financialAccounts)
@@ -163,6 +165,13 @@ export default async function AccountsPage() {
                     <AdjustBalanceDialog
                       accountId={acct.id}
                       accountName={acct.name}
+                    />
+                  )}
+                  {acct.accountType === "credit_card" && (
+                    <SetBillingDayDialog
+                      accountId={acct.id}
+                      accountName={acct.name}
+                      currentBillingDay={acct.billingDay}
                     />
                   )}
                   <DeleteAccountButton accountId={acct.id} />

@@ -93,6 +93,7 @@ export const financialAccounts = pgTable("financial_accounts", {
   startingBalance: numeric("starting_balance", { precision: 12, scale: 2 })
     .default("0")
     .notNull(),
+  billingDay: integer("billing_day"), // 1-31, only relevant for credit_card accounts
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

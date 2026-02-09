@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { transactions, recurringPatterns } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
+import { transactions, recurringPatterns, categories } from "@/lib/db/schema";
+import { eq, sql } from "drizzle-orm";
 import {
   median,
   standardDeviation,
@@ -8,6 +8,7 @@ import {
   frequencyToDays,
   mode,
 } from "./intervals";
+import { isCategoryDirectionCompatible } from "@/lib/classification/category-direction";
 
 interface DetectionResult {
   detected: number;
@@ -40,6 +41,29 @@ function daysBetween(a: Date, b: Date): number {
 export async function detectRecurringPatterns(
   householdId: string,
 ): Promise<DetectionResult> {
+  // Load categories with parent names for direction guard
+  const allCategories = await db
+    .select({
+      id: categories.id,
+      name: categories.name,
+      parentId: categories.parentId,
+    })
+    .from(categories)
+    .where(eq(categories.householdId, householdId));
+
+  const parentNameMap = new Map<string, string>();
+  for (const cat of allCategories) {
+    if (!cat.parentId) {
+      parentNameMap.set(cat.id, cat.name);
+    }
+  }
+
+  const categoryOptions = allCategories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    parentName: c.parentId ? (parentNameMap.get(c.parentId) ?? null) : null,
+  }));
+
   // Fetch last 12 months of transactions
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - 12);
@@ -110,9 +134,15 @@ export async function detectRecurringPatterns(
     // Compute expected amount (median), category (mode), account (mode)
     const amounts = group.map((t) => Math.abs(Number(t.amount)));
     const expectedAmount = median(amounts);
+
+    // Direction-aware category mode: filter candidates to match the group's transaction type
+    const dominantType = mode(group.map((t) => t.transactionType)) ?? "expense";
     const categoryIds = group
       .map((t) => t.categoryId)
-      .filter((id): id is string => id !== null);
+      .filter((id): id is string => id !== null)
+      .filter((id) =>
+        isCategoryDirectionCompatible(dominantType, id, categoryOptions),
+      );
     const categoryId = mode(categoryIds);
     const accountId = mode(group.map((t) => t.accountId));
 
