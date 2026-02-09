@@ -132,18 +132,20 @@ export async function calculateForecast(
     if (!expectedDate) continue;
     if (expectedDate < monthStart || expectedDate >= monthEnd) continue;
 
-    // Only include if it is in the future (or today)
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (expectedDate < today) continue;
-
-    const isIncome = pattern.parentCategoryName === "Income";
+    const isIncome =
+      pattern.parentCategoryName === "Income" ||
+      (pattern.categoryName === "Income" && pattern.parentCategoryName === null);
     const accountType = pattern.accountType ?? "bank";
+
+    // For chart projection, overdue items are applied to today
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const effectiveDate = expectedDate < today ? today : expectedDate;
 
     pendingRecurring.push({
       id: pattern.id,
       description: pattern.description,
       expectedAmount: expectedAmt,
-      expectedDate: expectedDate.toISOString().slice(0, 10),
+      expectedDate: effectiveDate.toISOString().slice(0, 10),
       type: isIncome ? "income" : "expense",
       accountType,
       categoryName: pattern.categoryName,
