@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 export function PatternToggle({
   patternId,
@@ -32,14 +33,19 @@ export function PatternToggle({
   }
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={toggle}
       disabled={pending}
+      whileTap={{ scale: 0.85 }}
       className="group flex h-5 w-5 shrink-0 items-center justify-center"
       title={isActive ? "Deactivate pattern" : "Activate pattern"}
     >
-      <span
+      <motion.span
+        key={isActive ? "active" : "inactive"}
+        initial={{ scale: 0.8 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 0.15 }}
         className={`block h-2.5 w-2.5 rounded-full transition-colors ${
           pending
             ? "animate-pulse bg-muted-foreground"
@@ -48,6 +54,6 @@ export function PatternToggle({
               : "bg-muted-foreground group-hover:bg-green-500"
         }`}
       />
-    </button>
+    </motion.button>
   );
 }

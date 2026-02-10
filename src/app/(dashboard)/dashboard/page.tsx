@@ -12,6 +12,7 @@ import { formatILS, getMonthBounds } from "@/lib/format";
 import { calculateForecast } from "@/lib/forecast/calculate";
 import { CategoryPieChart } from "@/components/dashboard/category-pie-chart";
 import { IncomeExpensesChart } from "@/components/dashboard/income-expenses-chart";
+import { MotionPage, MotionList, MotionItem } from "@/components/motion";
 
 export default async function DashboardPage() {
   const session = await requireAuth();
@@ -165,14 +166,14 @@ export default async function DashboardPage() {
     .limit(5);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <MotionPage className="mx-auto max-w-4xl space-y-6">
       <h1 className="font-mono text-xl font-bold text-foreground">
         Dashboard
       </h1>
 
       {/* Hero section: Bank Balance + Projected EOM */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-border bg-card px-5 py-5">
+      <MotionList className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <MotionItem className="rounded-lg border border-border bg-card px-5 py-5">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Bank Balance
           </p>
@@ -181,8 +182,8 @@ export default async function DashboardPage() {
           >
             {formatILS(forecast.bankBalance)}
           </p>
-        </div>
-        <div className="rounded-lg border border-border bg-card px-5 py-5">
+        </MotionItem>
+        <MotionItem className="rounded-lg border border-border bg-card px-5 py-5">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             End of Month
           </p>
@@ -196,62 +197,78 @@ export default async function DashboardPage() {
           >
             {forecast.isSafe ? "You're on track" : "Action needed"}
           </p>
-        </div>
-      </div>
+        </MotionItem>
+      </MotionList>
 
       {/* Monthly summary cards */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <SummaryCard label="Income" value={formatILS(income)} variant="green" />
-        <SummaryCard
-          label="Spending"
-          value={formatILS(spending)}
-          variant="red"
-        />
-        <SummaryCard
-          label="Net"
-          value={`${net >= 0 ? "+" : ""}${formatILS(net)}`}
-          variant={net >= 0 ? "green" : "red"}
-        />
-        <SummaryCard
-          label="CC Pending"
-          value={formatILS(forecast.ccLiability)}
-          variant="muted"
-          detail="hits bank next month"
-        />
-      </div>
+      <MotionList className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <MotionItem>
+          <SummaryCard label="Income" value={formatILS(income)} variant="green" />
+        </MotionItem>
+        <MotionItem>
+          <SummaryCard
+            label="Spending"
+            value={formatILS(spending)}
+            variant="red"
+          />
+        </MotionItem>
+        <MotionItem>
+          <SummaryCard
+            label="Net"
+            value={`${net >= 0 ? "+" : ""}${formatILS(net)}`}
+            variant={net >= 0 ? "green" : "red"}
+          />
+        </MotionItem>
+        <MotionItem>
+          <SummaryCard
+            label="CC Pending"
+            value={formatILS(forecast.ccLiability)}
+            variant="muted"
+            detail="hits bank next month"
+          />
+        </MotionItem>
+      </MotionList>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard
-          label="Categories"
-          value={String(Number(catCountRow?.count ?? 0))}
-        />
-        <StatCard
-          label="Transactions"
-          value={String(Number(txnCountRow?.count ?? 0))}
-          detail="this month"
-        />
-        <StatCard
-          label="Accounts"
-          value={String(Number(acctCountRow?.count ?? 0))}
-          detail="connected"
-        />
-        <StatCard
-          label="Recurring"
-          value={String(Number(recCountRow?.count ?? 0))}
-          detail="detected"
-        />
-      </div>
+      <MotionList className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <MotionItem>
+          <StatCard
+            label="Categories"
+            value={String(Number(catCountRow?.count ?? 0))}
+          />
+        </MotionItem>
+        <MotionItem>
+          <StatCard
+            label="Transactions"
+            value={String(Number(txnCountRow?.count ?? 0))}
+            detail="this month"
+          />
+        </MotionItem>
+        <MotionItem>
+          <StatCard
+            label="Accounts"
+            value={String(Number(acctCountRow?.count ?? 0))}
+            detail="connected"
+          />
+        </MotionItem>
+        <MotionItem>
+          <StatCard
+            label="Recurring"
+            value={String(Number(recCountRow?.count ?? 0))}
+            detail="detected"
+          />
+        </MotionItem>
+      </MotionList>
 
       {/* Charts row: Pie + Forecast */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-lg border border-border bg-card p-4">
+      <MotionList className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <MotionItem className="rounded-lg border border-border bg-card p-4">
           <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Expenses by Category
           </h2>
           <CategoryPieChart data={pieData} />
-        </div>
-        <div className="rounded-lg border border-border bg-card p-4">
+        </MotionItem>
+        <MotionItem className="rounded-lg border border-border bg-card p-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Forecast
@@ -309,19 +326,19 @@ export default async function DashboardPage() {
               </div>
             ) : null}
           </div>
-        </div>
-      </div>
+        </MotionItem>
+      </MotionList>
 
       {/* Income vs Expenses trend */}
-      <div className="rounded-lg border border-border bg-card p-4">
+      <MotionItem className="rounded-lg border border-border bg-card p-4">
         <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Income vs Expenses (6 months)
         </h2>
         <IncomeExpensesChart data={chartData} />
-      </div>
+      </MotionItem>
 
       {/* Recent transactions */}
-      <div className="rounded-lg border border-border bg-card">
+      <MotionItem className="rounded-lg border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="font-mono text-sm font-medium text-foreground">
             Recent Transactions
@@ -367,8 +384,8 @@ export default async function DashboardPage() {
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </MotionItem>
+    </MotionPage>
   );
 }
 

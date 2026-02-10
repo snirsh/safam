@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -40,13 +41,26 @@ export function SyncButton({
   }
 
   return (
-    <Button
-      size="sm"
-      variant="outline"
-      onClick={handleSync}
-      disabled={isLoading || disabled}
-    >
-      {isLoading ? "Syncing..." : "Sync Now"}
-    </Button>
+    <motion.div whileTap={{ scale: 0.97 }}>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-10 sm:h-8"
+        onClick={handleSync}
+        disabled={isLoading || disabled}
+      >
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={isLoading ? "loading" : "idle"}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.1 }}
+          >
+            {isLoading ? "Syncing..." : "Sync Now"}
+          </motion.span>
+        </AnimatePresence>
+      </Button>
+    </motion.div>
   );
 }

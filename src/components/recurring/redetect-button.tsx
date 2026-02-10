@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
 export function RedetectButton() {
@@ -26,13 +27,24 @@ export function RedetectButton() {
   }
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={redetect}
       disabled={pending}
+      whileTap={{ scale: 0.97 }}
       className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
     >
-      {pending ? "Detecting..." : "Re-detect"}
-    </button>
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={pending ? "loading" : "idle"}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.1 }}
+        >
+          {pending ? "Detecting..." : "Re-detect"}
+        </motion.span>
+      </AnimatePresence>
+    </motion.button>
   );
 }

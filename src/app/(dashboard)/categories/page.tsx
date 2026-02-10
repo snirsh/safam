@@ -3,6 +3,7 @@ import { categories } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/session";
 import { eq } from "drizzle-orm";
 import { AddCategoryDialog } from "@/components/categories/add-category-dialog";
+import { MotionPage, MotionList, MotionItem } from "@/components/motion";
 
 export default async function CategoriesPage() {
   const session = await requireAuth();
@@ -17,7 +18,7 @@ export default async function CategoriesPage() {
   const children = allCategories.filter((c) => c.parentId);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <MotionPage className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-mono text-xl font-bold text-foreground">
           Categories
@@ -35,11 +36,11 @@ export default async function CategoriesPage() {
         {parents.length} categories, {children.length} subcategories
       </p>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <MotionList className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {parents.map((parent) => {
           const subs = children.filter((c) => c.parentId === parent.id);
           return (
-            <div
+            <MotionItem
               key={parent.id}
               className="rounded-lg border border-border bg-card p-4"
             >
@@ -65,10 +66,10 @@ export default async function CategoriesPage() {
                   ))}
                 </div>
               ) : null}
-            </div>
+            </MotionItem>
           );
         })}
-      </div>
-    </div>
+      </MotionList>
+    </MotionPage>
   );
 }

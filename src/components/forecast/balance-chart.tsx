@@ -9,6 +9,8 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { MotionFade } from "@/components/motion";
 
 interface DataPoint {
   date: string;
@@ -17,6 +19,8 @@ interface DataPoint {
 }
 
 export function BalanceChart({ data }: { data: DataPoint[] }) {
+  const reducedMotion = useReducedMotion();
+
   if (data.length === 0) {
     return (
       <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
@@ -35,7 +39,7 @@ export function BalanceChart({ data }: { data: DataPoint[] }) {
     : "hsl(142, 76%, 36%)";
 
   return (
-    <div className="h-64 w-full">
+    <MotionFade className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
           <defs>
@@ -72,7 +76,6 @@ export function BalanceChart({ data }: { data: DataPoint[] }) {
             width={50}
           />
           <Tooltip
-            isAnimationActive={false}
             content={({ active, payload }) => {
               if (!active || !payload?.[0]) return null;
               const point = payload[0].payload as DataPoint;
@@ -104,10 +107,12 @@ export function BalanceChart({ data }: { data: DataPoint[] }) {
             stroke={strokeColor}
             strokeWidth={2}
             fill={hasNegative ? "url(#balanceGradientRed)" : "url(#balanceGradientGreen)"}
-            isAnimationActive={false}
+            isAnimationActive={!reducedMotion}
+            animationDuration={800}
+            animationEasing="ease-out"
           />
         </AreaChart>
       </ResponsiveContainer>
-    </div>
+    </MotionFade>
   );
 }

@@ -64,7 +64,7 @@ export function AdjustBalanceDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
+        <Button size="sm" variant="outline" className="h-10 sm:h-8">
           Adjust Balance
         </Button>
       </DialogTrigger>

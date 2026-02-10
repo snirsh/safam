@@ -8,6 +8,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { MotionFade } from "@/components/motion";
 
 interface MonthlyData {
   month: string;
@@ -16,6 +18,8 @@ interface MonthlyData {
 }
 
 export function IncomeExpensesChart({ data }: { data: MonthlyData[] }) {
+  const reducedMotion = useReducedMotion();
+
   if (data.length === 0) {
     return (
       <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
@@ -25,7 +29,7 @@ export function IncomeExpensesChart({ data }: { data: MonthlyData[] }) {
   }
 
   return (
-    <div className="h-64 w-full">
+    <MotionFade className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
           <XAxis
@@ -47,7 +51,6 @@ export function IncomeExpensesChart({ data }: { data: MonthlyData[] }) {
             width={50}
           />
           <Tooltip
-            isAnimationActive={false}
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
               return (
@@ -73,10 +76,10 @@ export function IncomeExpensesChart({ data }: { data: MonthlyData[] }) {
               );
             }}
           />
-          <Bar dataKey="income" fill="hsl(142, 76%, 36%)" radius={[3, 3, 0, 0]} />
-          <Bar dataKey="expenses" fill="hsl(0, 84%, 60%)" radius={[3, 3, 0, 0]} />
+          <Bar dataKey="income" fill="hsl(142, 76%, 36%)" radius={[3, 3, 0, 0]} isAnimationActive={!reducedMotion} animationDuration={600} animationEasing="ease-out" />
+          <Bar dataKey="expenses" fill="hsl(0, 84%, 60%)" radius={[3, 3, 0, 0]} isAnimationActive={!reducedMotion} animationDuration={600} animationEasing="ease-out" />
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </MotionFade>
   );
 }

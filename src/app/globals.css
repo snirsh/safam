@@ -125,3 +125,48 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Mobile bottom-sheet dialogs */
+@media (max-width: 640px) {
+  [data-slot="dialog-content"] {
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    translate: none !important;
+    max-width: 100% !important;
+    border-radius: 1rem 1rem 0 0 !important;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  [data-slot="dialog-content"][data-state="open"] {
+    animation: slide-up-mobile 0.2s ease-out !important;
+  }
+
+  [data-slot="dialog-content"][data-state="closed"] {
+    animation: slide-down-mobile 0.15s ease-in !important;
+  }
+}
+
+@keyframes slide-up-mobile {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-down-mobile {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -61,6 +62,13 @@ export function FilterBar({ categories, accounts }: FilterBarProps) {
     };
   }, [search, currentSearch, updateParams]);
 
+  const typeOptions = [
+    ["", "All"],
+    ["income", "Income"],
+    ["expense", "Expenses"],
+    ["transfer", "Transfers"],
+  ] as const;
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* Search */}
@@ -101,42 +109,51 @@ export function FilterBar({ categories, accounts }: FilterBarProps) {
         </select>
       ) : null}
 
-      {/* Type toggle */}
+      {/* Type toggle with animated active indicator */}
       <div className="flex rounded-md border border-border">
-        {(
-          [
-            ["", "All"],
-            ["income", "Income"],
-            ["expense", "Expenses"],
-            ["transfer", "Transfers"],
-          ] as const
-        ).map(([value, label]) => (
+        {typeOptions.map(([value, label]) => (
           <button
             key={value}
             type="button"
             onClick={() => updateParams("type", value)}
-            className={`px-2.5 py-1 text-xs transition-colors ${
+            className={`relative px-2.5 py-1 text-xs transition-colors ${
               currentType === value
-                ? "bg-accent text-foreground"
+                ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             } ${value === "" ? "rounded-l-md" : ""} ${value === "transfer" ? "rounded-r-md" : ""}`}
           >
-            {label}
+            {currentType === value ? (
+              <motion.span
+                layoutId="typeToggleActive"
+                className="absolute inset-0 rounded-[inherit] bg-accent"
+                transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
+              />
+            ) : null}
+            <span className="relative z-10">{label}</span>
           </button>
         ))}
       </div>
 
       {/* Clear filters */}
-      {hasFilters ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={clearFilters}
-          className="h-8 text-xs text-muted-foreground"
-        >
-          Clear
-        </Button>
-      ) : null}
+      <AnimatePresence>
+        {hasFilters ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="h-8 text-xs text-muted-foreground"
+            >
+              Clear
+            </Button>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

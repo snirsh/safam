@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { MotionPage } from "@/components/motion";
 
 type Status = "idle" | "loading" | "error";
 
@@ -118,7 +119,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card p-6">
+    <MotionPage className="rounded-lg border border-border bg-card p-6">
       <h2 className="font-mono text-lg font-medium text-foreground">
         Welcome back
       </h2>
@@ -150,7 +151,7 @@ export default function LoginPage() {
           Register
         </Link>
       </p>
-    </div>
+    </MotionPage>
   );
 }
 

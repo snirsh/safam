@@ -1,6 +1,8 @@
 "use client";
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
+import { MotionFade } from "@/components/motion";
 
 interface CategoryData {
   name: string;
@@ -17,6 +19,8 @@ const COLORS = [
 ];
 
 export function CategoryPieChart({ data }: { data: CategoryData[] }) {
+  const reducedMotion = useReducedMotion();
+
   if (data.length === 0) {
     return (
       <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
@@ -26,7 +30,7 @@ export function CategoryPieChart({ data }: { data: CategoryData[] }) {
   }
 
   return (
-    <div className="h-64 w-full">
+    <MotionFade className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -38,13 +42,15 @@ export function CategoryPieChart({ data }: { data: CategoryData[] }) {
             innerRadius={50}
             outerRadius={90}
             paddingAngle={2}
+            isAnimationActive={!reducedMotion}
+            animationDuration={800}
+            animationEasing="ease-out"
           >
             {data.map((_, i) => (
               <Cell key={i} fill={COLORS[i % COLORS.length]!} />
             ))}
           </Pie>
           <Tooltip
-            isAnimationActive={false}
             content={({ active, payload }) => {
               if (!active || !payload?.[0]) return null;
               const entry = payload[0].payload as CategoryData;
@@ -66,6 +72,6 @@ export function CategoryPieChart({ data }: { data: CategoryData[] }) {
           />
         </PieChart>
       </ResponsiveContainer>
-    </div>
+    </MotionFade>
   );
 }

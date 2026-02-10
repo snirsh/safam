@@ -100,7 +100,7 @@ export function ReauthDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
+        <Button size="sm" variant="outline" className="h-10 sm:h-8">
           Re-authenticate
         </Button>
       </DialogTrigger>

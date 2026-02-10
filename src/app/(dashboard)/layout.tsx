@@ -1,16 +1,9 @@
-import Link from "next/link";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
-
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: "~" },
-  { href: "/transactions", label: "Transactions", icon: "$" },
-  { href: "/categories", label: "Categories", icon: "#" },
-  { href: "/accounts", label: "Accounts", icon: ">" },
-  { href: "/recurring", label: "Recurring", icon: "@" },
-  { href: "/forecast", label: "Forecast", icon: "%" },
-];
+import { SidebarNav } from "@/components/navigation/sidebar-nav";
+import { MobileNav } from "@/components/navigation/mobile-nav";
+import { RefreshButton } from "@/components/navigation/refresh-button";
 
 export default async function DashboardLayout({
   children,
@@ -32,45 +25,27 @@ export default async function DashboardLayout({
           </span>
           <ThemeToggle />
         </div>
-        <nav className="flex flex-col gap-0.5 p-2">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <span className="font-mono text-xs opacity-50">{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <SidebarNav />
       </aside>
 
-      {/* Mobile header */}
+      {/* Mobile header + content */}
       <div className="flex flex-1 flex-col">
         <header className="flex h-14 items-center justify-between border-b border-border px-4 md:hidden">
           <span className="font-mono text-lg font-bold text-foreground">
             safam
           </span>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <RefreshButton />
+            <ThemeToggle />
+          </div>
         </header>
 
-        {/* Mobile nav */}
-        <nav className="flex gap-1 overflow-x-auto border-b border-border px-2 py-1.5 md:hidden">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="shrink-0 rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Main content */}
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        {/* Main content — pb-20 for mobile bottom nav clearance */}
+        <main className="flex-1 p-4 pb-20 md:p-6 md:pb-6">{children}</main>
       </div>
+
+      {/* Bottom tab bar (mobile only) */}
+      <MobileNav />
     </div>
   );
 }

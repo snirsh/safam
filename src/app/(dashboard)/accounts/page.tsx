@@ -12,6 +12,7 @@ import { AdjustBalanceDialog } from "@/components/accounts/adjust-balance-dialog
 import { SetBillingDayDialog } from "@/components/accounts/set-billing-day-dialog";
 import { calculateBankBalance } from "@/lib/balance/calculate";
 import { formatILS } from "@/lib/format";
+import { MotionPage, MotionList, MotionItem } from "@/components/motion";
 
 export default async function AccountsPage() {
   const session = await requireAuth();
@@ -60,7 +61,7 @@ export default async function AccountsPage() {
   );
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <MotionPage className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-mono text-xl font-bold text-foreground">
           Accounts
@@ -73,7 +74,7 @@ export default async function AccountsPage() {
           No accounts connected. Add a bank or credit card to start syncing.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <MotionList className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {accounts.map((acct) => {
             const label =
               INSTITUTIONS[acct.institution as InstitutionKey]?.label ??
@@ -85,7 +86,7 @@ export default async function AccountsPage() {
               /token|otp/i.test(sync.errorMessage ?? "");
             const bankBalance = balanceMap.get(acct.id);
             return (
-              <div
+              <MotionItem
                 key={acct.id}
                 className="rounded-lg border border-border bg-card p-4"
               >
@@ -176,11 +177,11 @@ export default async function AccountsPage() {
                   )}
                   <DeleteAccountButton accountId={acct.id} />
                 </div>
-              </div>
+              </MotionItem>
             );
           })}
-        </div>
+        </MotionList>
       )}
-    </div>
+    </MotionPage>
   );
 }

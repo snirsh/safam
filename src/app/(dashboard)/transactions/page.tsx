@@ -8,6 +8,7 @@ import { formatILS, parseMonth, monthKey, monthLabel } from "@/lib/format";
 import { FilterBar } from "@/components/transactions/filter-bar";
 import { CategorySelector } from "@/components/transactions/category-selector";
 import { ClassificationBadge } from "@/components/transactions/classification-badge";
+import { MotionPage, MotionList, MotionItem, MotionTbody, MotionTr, staggerContainer, staggerItem } from "@/components/motion";
 
 interface SearchParams {
   month?: string;
@@ -149,7 +150,7 @@ export default async function TransactionsPage({
     .orderBy(financialAccounts.name);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <MotionPage className="mx-auto max-w-4xl space-y-6">
       {/* Header with month navigation */}
       <div className="flex items-center justify-between">
         <h1 className="font-mono text-xl font-bold text-foreground">
@@ -184,24 +185,24 @@ export default async function TransactionsPage({
       </Suspense>
 
       {/* Month summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
+      <MotionList className="grid grid-cols-3 gap-4">
+        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Income
           </p>
           <p className="mt-0.5 font-mono text-lg font-bold text-green-500">
             {formatILS(income)}
           </p>
-        </div>
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
+        </MotionItem>
+        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Expenses
           </p>
           <p className="mt-0.5 font-mono text-lg font-bold text-red-500">
             {formatILS(expenses)}
           </p>
-        </div>
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
+        </MotionItem>
+        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Balance
           </p>
@@ -210,8 +211,8 @@ export default async function TransactionsPage({
           >
             {formatILS(income - expenses)}
           </p>
-        </div>
-      </div>
+        </MotionItem>
+      </MotionList>
 
       {txns.length === 0 ? (
         <div className="rounded-lg border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
@@ -245,11 +246,12 @@ export default async function TransactionsPage({
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <MotionTbody className="divide-y divide-border" initial="initial" animate="animate" variants={staggerContainer}>
                 {txns.map((tx) => (
-                  <tr
+                  <MotionTr
                     key={tx.id}
                     className="transition-colors hover:bg-accent/50"
+                    variants={staggerItem}
                   >
                     <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-muted-foreground">
                       {new Date(tx.date).toLocaleDateString("he-IL")}
@@ -277,18 +279,18 @@ export default async function TransactionsPage({
                       {tx.type === "income" ? "+" : tx.type === "transfer" ? "" : "-"}
                       {formatILS(Math.abs(Number(tx.amount)))}
                     </td>
-                  </tr>
+                  </MotionTr>
                 ))}
-              </tbody>
+              </MotionTbody>
             </table>
           </div>
 
           {/* Mobile card list */}
-          <div className="space-y-2 md:hidden">
+          <MotionList className="space-y-2 md:hidden">
             {txns.map((tx) => (
-              <div
+              <MotionItem
                 key={tx.id}
-                className="rounded-lg border border-border bg-card p-3"
+                className="rounded-lg border border-border bg-card px-3 py-3.5"
               >
                 <div className="flex items-start justify-between">
                   <div className="min-w-0 flex-1">
@@ -315,11 +317,11 @@ export default async function TransactionsPage({
                     {formatILS(Math.abs(Number(tx.amount)))}
                   </span>
                 </div>
-              </div>
+            </MotionItem>
             ))}
-          </div>
+          </MotionList>
         </>
       )}
-    </div>
+    </MotionPage>
   );
 }

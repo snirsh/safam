@@ -44,6 +44,7 @@ export function AccountToggle({
     <Button
       size="sm"
       variant="outline"
+      className="h-10 sm:h-8"
       onClick={handleToggle}
       disabled={isLoading}
     >

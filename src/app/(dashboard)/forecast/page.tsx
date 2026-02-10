@@ -2,20 +2,21 @@ import { requireAuth } from "@/lib/auth/session";
 import { calculateForecast } from "@/lib/forecast/calculate";
 import { formatILS } from "@/lib/format";
 import { BalanceChart } from "@/components/forecast/balance-chart";
+import { MotionPage, MotionList, MotionItem } from "@/components/motion";
 
 export default async function ForecastPage() {
   const session = await requireAuth();
   const forecast = await calculateForecast(session.householdId);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <MotionPage className="mx-auto max-w-4xl space-y-6">
       <h1 className="font-mono text-xl font-bold text-foreground">
         Forecast
       </h1>
 
       {/* Hero: Bank Balance → Projected EOM */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-border bg-card px-5 py-5">
+      <MotionList className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <MotionItem className="rounded-lg border border-border bg-card px-5 py-5">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Bank Balance Now
           </p>
@@ -24,8 +25,8 @@ export default async function ForecastPage() {
           >
             {formatILS(forecast.bankBalance)}
           </p>
-        </div>
-        <div className="rounded-lg border border-border bg-card px-5 py-5">
+        </MotionItem>
+        <MotionItem className="rounded-lg border border-border bg-card px-5 py-5">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Projected End of Month
           </p>
@@ -39,28 +40,28 @@ export default async function ForecastPage() {
           >
             {forecast.isSafe ? "You're on track" : "Action needed — consider transferring from savings"}
           </p>
-        </div>
-      </div>
+        </MotionItem>
+      </MotionList>
 
       {/* Detail cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
+      <MotionList className="grid grid-cols-3 gap-4">
+        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Pending Bank Income
           </p>
           <p className="mt-0.5 font-mono text-lg font-bold text-green-500">
             +{formatILS(forecast.totalPendingBankIncome)}
           </p>
-        </div>
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
+        </MotionItem>
+        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Pending Bank Expenses
           </p>
           <p className="mt-0.5 font-mono text-lg font-bold text-red-500">
             -{formatILS(forecast.totalPendingBankExpenses)}
           </p>
-        </div>
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
+        </MotionItem>
+        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             CC Liability
           </p>
@@ -68,8 +69,8 @@ export default async function ForecastPage() {
             {formatILS(forecast.ccLiability)}
           </p>
           <p className="text-xs text-muted-foreground">hits bank next month</p>
-        </div>
-      </div>
+        </MotionItem>
+      </MotionList>
 
       {/* Balance projection chart */}
       <div className="rounded-lg border border-border bg-card p-4">
@@ -86,9 +87,9 @@ export default async function ForecastPage() {
             Upcoming ({forecast.pendingRecurring.length})
           </h2>
           <div className="rounded-lg border border-border bg-card">
-            <div className="divide-y divide-border">
+            <MotionList className="divide-y divide-border">
               {forecast.pendingRecurring.map((p) => (
-                <div
+                <MotionItem
                   key={p.id}
                   className="flex items-center justify-between px-4 py-3"
                 >
@@ -120,9 +121,9 @@ export default async function ForecastPage() {
                     {p.type === "income" ? "+" : "-"}
                     {formatILS(p.expectedAmount)}
                   </p>
-                </div>
+                </MotionItem>
               ))}
-            </div>
+            </MotionList>
             <div className="border-t border-border px-4 py-2">
               <p className="text-xs text-muted-foreground">
                 Items tagged CC are informational — they&apos;ll deduct from your bank next month.
@@ -135,6 +136,6 @@ export default async function ForecastPage() {
           No pending recurring transactions for the rest of this month.
         </div>
       )}
-    </div>
+    </MotionPage>
   );
 }

@@ -40,6 +40,7 @@ export function DeleteAccountButton({ accountId }: { accountId: string }) {
     <Button
       size="sm"
       variant="destructive"
+      className="h-10 sm:h-8"
       onClick={handleDelete}
       disabled={isLoading}
     >

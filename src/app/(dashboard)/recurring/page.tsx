@@ -10,6 +10,7 @@ import { eq } from "drizzle-orm";
 import { formatILS } from "@/lib/format";
 import { PatternToggle } from "@/components/recurring/pattern-toggle";
 import { RedetectButton } from "@/components/recurring/redetect-button";
+import { MotionPage, MotionList, MotionItem } from "@/components/motion";
 
 const frequencyLabels: Record<string, string> = {
   weekly: "Weekly",
@@ -64,7 +65,7 @@ export default async function RecurringPage() {
     .reduce((sum, p) => sum + Number(p.expectedAmount), 0);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <MotionPage className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-mono text-xl font-bold text-foreground">
           Recurring
@@ -73,24 +74,24 @@ export default async function RecurringPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
+      <MotionList className="grid grid-cols-3 gap-4">
+        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Monthly Income
           </p>
           <p className="mt-0.5 font-mono text-lg font-bold text-green-500">
             +{formatILS(monthlyIncome)}
           </p>
-        </div>
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
+        </MotionItem>
+        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Monthly Expenses
           </p>
           <p className="mt-0.5 font-mono text-lg font-bold text-red-500">
             -{formatILS(monthlyExpenses)}
           </p>
-        </div>
-        <div className="rounded-lg border border-border bg-card px-4 py-3">
+        </MotionItem>
+        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Net Recurring
           </p>
@@ -99,8 +100,8 @@ export default async function RecurringPage() {
           >
             {formatILS(monthlyIncome - monthlyExpenses)}
           </p>
-        </div>
-      </div>
+        </MotionItem>
+      </MotionList>
 
       {patterns.length === 0 ? (
         <div className="rounded-lg border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
@@ -130,7 +131,7 @@ export default async function RecurringPage() {
           ) : null}
         </>
       )}
-    </div>
+    </MotionPage>
   );
 }
 
@@ -159,7 +160,7 @@ function PatternList({
 
   return (
     <div className="rounded-lg border border-border bg-card">
-      <div className="divide-y divide-border">
+      <MotionList className="divide-y divide-border">
         {patterns.map((p) => {
           const confidence = Number(p.confidence ?? 0);
           const confidenceLabel =
@@ -176,7 +177,7 @@ function PatternList({
                 : "text-red-500";
 
           return (
-            <div
+            <MotionItem
               key={p.id}
               className="flex items-center justify-between px-4 py-3"
             >
@@ -213,10 +214,10 @@ function PatternList({
                   </p>
                 ) : null}
               </div>
-            </div>
+            </MotionItem>
           );
         })}
-      </div>
+      </MotionList>
     </div>
   );
 }
