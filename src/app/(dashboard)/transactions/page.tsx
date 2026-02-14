@@ -8,7 +8,7 @@ import { formatILS, parseMonth, monthKey, monthLabel } from "@/lib/format";
 import { FilterBar } from "@/components/transactions/filter-bar";
 import { CategorySelector } from "@/components/transactions/category-selector";
 import { ClassificationBadge } from "@/components/transactions/classification-badge";
-import { MotionPage, MotionList, MotionItem, MotionTbody, MotionTr, staggerContainer, staggerItem } from "@/components/motion";
+import { MotionPage, MotionList, MotionItem, MotionTbody, MotionTr, staggerContainer, staggerItem, AnimatedNumber } from "@/components/motion";
 
 interface SearchParams {
   month?: string;
@@ -185,32 +185,27 @@ export default async function TransactionsPage({
       </Suspense>
 
       {/* Month summary */}
-      <MotionList className="grid grid-cols-3 gap-4">
-        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      <MotionList className="grid grid-cols-3 gap-2 sm:gap-4">
+        <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Income
           </p>
-          <p className="mt-0.5 font-mono text-lg font-bold text-green-500">
-            {formatILS(income)}
-          </p>
+          <AnimatedNumber value={income} className="mt-0.5 block truncate font-mono text-base font-bold text-green-500 sm:text-lg" />
         </MotionItem>
-        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Expenses
           </p>
-          <p className="mt-0.5 font-mono text-lg font-bold text-red-500">
-            {formatILS(expenses)}
-          </p>
+          <AnimatedNumber value={expenses} className="mt-0.5 block truncate font-mono text-base font-bold text-red-500 sm:text-lg" />
         </MotionItem>
-        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Balance
           </p>
-          <p
-            className={`mt-0.5 font-mono text-lg font-bold ${income - expenses >= 0 ? "text-green-500" : "text-red-500"}`}
-          >
-            {formatILS(income - expenses)}
-          </p>
+          <AnimatedNumber
+            value={income - expenses}
+            className={`mt-0.5 block truncate font-mono text-base font-bold sm:text-lg ${income - expenses >= 0 ? "text-green-500" : "text-red-500"}`}
+          />
         </MotionItem>
       </MotionList>
 

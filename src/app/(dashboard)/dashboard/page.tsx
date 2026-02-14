@@ -12,7 +12,7 @@ import { formatILS, getMonthBounds } from "@/lib/format";
 import { calculateForecast } from "@/lib/forecast/calculate";
 import { CategoryPieChart } from "@/components/dashboard/category-pie-chart";
 import { IncomeExpensesChart } from "@/components/dashboard/income-expenses-chart";
-import { MotionPage, MotionList, MotionItem } from "@/components/motion";
+import { MotionPage, MotionList, MotionItem, AnimatedNumber } from "@/components/motion";
 import { DemoWelcomeToast } from "@/components/demo/welcome-toast";
 
 export default async function DashboardPage() {
@@ -179,21 +179,19 @@ export default async function DashboardPage() {
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Bank Balance
           </p>
-          <p
-            className={`mt-1 font-mono text-3xl font-bold ${forecast.bankBalance >= 0 ? "text-green-500" : "text-red-500"}`}
-          >
-            {formatILS(forecast.bankBalance)}
-          </p>
+          <AnimatedNumber
+            value={forecast.bankBalance}
+            className={`mt-1 block font-mono text-3xl font-bold ${forecast.bankBalance >= 0 ? "text-green-500" : "text-red-500"}`}
+          />
         </MotionItem>
         <MotionItem className="rounded-lg border border-border bg-card px-5 py-5">
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             End of Month
           </p>
-          <p
-            className={`mt-1 font-mono text-3xl font-bold ${forecast.isSafe ? "text-green-500" : "text-red-500"}`}
-          >
-            {formatILS(forecast.projectedEndOfMonth)}
-          </p>
+          <AnimatedNumber
+            value={forecast.projectedEndOfMonth}
+            className={`mt-1 block font-mono text-3xl font-bold ${forecast.isSafe ? "text-green-500" : "text-red-500"}`}
+          />
           <p
             className={`mt-1 text-xs font-medium ${forecast.isSafe ? "text-green-500" : "text-red-500"}`}
           >
@@ -205,26 +203,27 @@ export default async function DashboardPage() {
       {/* Monthly summary cards */}
       <MotionList className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <MotionItem>
-          <SummaryCard label="Income" value={formatILS(income)} variant="green" />
+          <SummaryCard label="Income" value={income} variant="green" />
         </MotionItem>
         <MotionItem>
           <SummaryCard
             label="Spending"
-            value={formatILS(spending)}
+            value={spending}
             variant="red"
           />
         </MotionItem>
         <MotionItem>
           <SummaryCard
             label="Net"
-            value={`${net >= 0 ? "+" : ""}${formatILS(net)}`}
+            value={net}
+            prefix={net >= 0 ? "+" : ""}
             variant={net >= 0 ? "green" : "red"}
           />
         </MotionItem>
         <MotionItem>
           <SummaryCard
             label="CC Pending"
-            value={formatILS(forecast.ccLiability)}
+            value={forecast.ccLiability}
             variant="muted"
             detail="hits bank next month"
           />
@@ -236,27 +235,27 @@ export default async function DashboardPage() {
         <MotionItem>
           <StatCard
             label="Categories"
-            value={String(Number(catCountRow?.count ?? 0))}
+            value={Number(catCountRow?.count ?? 0)}
           />
         </MotionItem>
         <MotionItem>
           <StatCard
             label="Transactions"
-            value={String(Number(txnCountRow?.count ?? 0))}
+            value={Number(txnCountRow?.count ?? 0)}
             detail="this month"
           />
         </MotionItem>
         <MotionItem>
           <StatCard
             label="Accounts"
-            value={String(Number(acctCountRow?.count ?? 0))}
+            value={Number(acctCountRow?.count ?? 0)}
             detail="connected"
           />
         </MotionItem>
         <MotionItem>
           <StatCard
             label="Recurring"
-            value={String(Number(recCountRow?.count ?? 0))}
+            value={Number(recCountRow?.count ?? 0)}
             detail="detected"
           />
         </MotionItem>
@@ -394,11 +393,13 @@ export default async function DashboardPage() {
 function SummaryCard({
   label,
   value,
+  prefix,
   variant,
   detail,
 }: {
   label: string;
-  value: string;
+  value: number;
+  prefix?: string;
   variant: "green" | "red" | "muted";
   detail?: string;
 }) {
@@ -413,9 +414,7 @@ function SummaryCard({
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
-      <p className={`mt-0.5 font-mono text-lg font-bold ${colorClass}`}>
-        {value}
-      </p>
+      <AnimatedNumber value={value} prefix={prefix} className={`mt-0.5 block font-mono text-lg font-bold ${colorClass}`} />
       {detail ? (
         <p className="text-xs text-muted-foreground">{detail}</p>
       ) : null}
@@ -429,13 +428,14 @@ function StatCard({
   detail,
 }: {
   label: string;
-  value: string;
+  value: number;
   detail?: string;
 }) {
+  const formatInt = (n: number) => String(Math.round(n));
   return (
     <div className="rounded-lg border border-border bg-card px-4 py-3">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="font-mono text-lg font-bold text-foreground">{value}</p>
+      <AnimatedNumber value={value} format={formatInt} className="block font-mono text-lg font-bold text-foreground" />
       {detail ? (
         <p className="text-xs text-muted-foreground">{detail}</p>
       ) : null}

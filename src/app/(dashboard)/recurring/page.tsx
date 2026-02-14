@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 import { formatILS } from "@/lib/format";
 import { PatternToggle } from "@/components/recurring/pattern-toggle";
 import { RedetectButton } from "@/components/recurring/redetect-button";
-import { MotionPage, MotionList, MotionItem } from "@/components/motion";
+import { MotionPage, MotionList, MotionItem, AnimatedNumber } from "@/components/motion";
 
 const frequencyLabels: Record<string, string> = {
   weekly: "Weekly",
@@ -74,32 +74,27 @@ export default async function RecurringPage() {
       </div>
 
       {/* Summary cards */}
-      <MotionList className="grid grid-cols-3 gap-4">
-        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+      <MotionList className="grid grid-cols-3 gap-2 sm:gap-4">
+        <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Monthly Income
           </p>
-          <p className="mt-0.5 font-mono text-lg font-bold text-green-500">
-            +{formatILS(monthlyIncome)}
-          </p>
+          <AnimatedNumber value={monthlyIncome} prefix="+" className="mt-0.5 block truncate font-mono text-base font-bold text-green-500 sm:text-lg" />
         </MotionItem>
-        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Monthly Expenses
           </p>
-          <p className="mt-0.5 font-mono text-lg font-bold text-red-500">
-            -{formatILS(monthlyExpenses)}
-          </p>
+          <AnimatedNumber value={monthlyExpenses} prefix="-" className="mt-0.5 block truncate font-mono text-base font-bold text-red-500 sm:text-lg" />
         </MotionItem>
-        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Net Recurring
           </p>
-          <p
-            className={`mt-0.5 font-mono text-lg font-bold ${monthlyIncome - monthlyExpenses >= 0 ? "text-green-500" : "text-red-500"}`}
-          >
-            {formatILS(monthlyIncome - monthlyExpenses)}
-          </p>
+          <AnimatedNumber
+            value={monthlyIncome - monthlyExpenses}
+            className={`mt-0.5 block truncate font-mono text-base font-bold sm:text-lg ${monthlyIncome - monthlyExpenses >= 0 ? "text-green-500" : "text-red-500"}`}
+          />
         </MotionItem>
       </MotionList>
 
