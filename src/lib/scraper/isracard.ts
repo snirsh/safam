@@ -184,7 +184,6 @@ interface IsracardTxn {
 }
 
 function convertTransaction(txn: IsracardTxn, processedDate: string): RawTransaction | null {
-  if (txn.dealSumType === "1") return null;
   if (txn.voucherNumberRatz === "000000000" && txn.voucherNumberRatzOutbound === "000000000") {
     return null;
   }
@@ -287,12 +286,15 @@ export async function scrapeIsracard(
     for (const { month, year } of months) {
       const { transactions: txns, processedDate } = await fetchTransactionsForMonth(page, month, year);
 
+      let kept = 0;
       for (const txn of txns) {
         const converted = convertTransaction(txn, processedDate);
         if (converted && new Date(converted.date) >= start) {
           allTransactions.push(converted);
+          kept++;
         }
       }
+      console.log(`[isracard] ${year}-${String(month).padStart(2, "0")}: ${txns.length} raw → ${kept} kept`);
     }
 
     await browser.close();
