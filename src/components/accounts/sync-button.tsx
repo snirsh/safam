@@ -16,13 +16,14 @@ export function SyncButton({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  async function handleSync() {
+  async function handleSync(full?: boolean) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/accounts/${accountId}/sync`, {
-        method: "POST",
-      });
+      const url = full
+        ? `/api/accounts/${accountId}/sync?full=1`
+        : `/api/accounts/${accountId}/sync`;
+      const response = await fetch(url, { method: "POST" });
 
       if (!response.ok) {
         const data = (await response.json()) as { error?: string };
@@ -41,26 +42,39 @@ export function SyncButton({
   }
 
   return (
-    <motion.div whileTap={{ scale: 0.97 }}>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-10 sm:h-8"
-        onClick={handleSync}
-        disabled={isLoading || disabled}
-      >
-        <AnimatePresence mode="wait">
-          <motion.span
-            key={isLoading ? "loading" : "idle"}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.1 }}
-          >
-            {isLoading ? "Syncing..." : "Sync Now"}
-          </motion.span>
-        </AnimatePresence>
-      </Button>
-    </motion.div>
+    <div className="flex gap-2">
+      <motion.div whileTap={{ scale: 0.97 }}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-10 sm:h-8"
+          onClick={() => handleSync()}
+          disabled={isLoading || disabled}
+        >
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={isLoading ? "loading" : "idle"}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.1 }}
+            >
+              {isLoading ? "Syncing..." : "Sync Now"}
+            </motion.span>
+          </AnimatePresence>
+        </Button>
+      </motion.div>
+      <motion.div whileTap={{ scale: 0.97 }}>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-10 sm:h-8 text-muted-foreground"
+          onClick={() => handleSync(true)}
+          disabled={isLoading || disabled}
+        >
+          {isLoading ? "..." : "Last 30 days"}
+        </Button>
+      </motion.div>
+    </div>
   );
 }
