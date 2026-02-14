@@ -15,6 +15,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Demo mode: skip auth checks (rely on session.ts demo bypass)
+  if (process.env["NEXT_PUBLIC_DEMO_MODE"] === "true") {
+    return NextResponse.next();
+  }
+
   const { pathname } = request.nextUrl;
 
   // Allow public paths
