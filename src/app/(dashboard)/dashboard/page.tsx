@@ -431,11 +431,10 @@ function StatCard({
   value: number;
   detail?: string;
 }) {
-  const formatInt = (n: number) => String(Math.round(n));
   return (
     <div className="rounded-lg border border-border bg-card px-4 py-3">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <AnimatedNumber value={value} format={formatInt} className="block font-mono text-lg font-bold text-foreground" />
+      <AnimatedNumber value={value} formatAs="integer" className="block font-mono text-lg font-bold text-foreground" />
       {detail ? (
         <p className="text-xs text-muted-foreground">{detail}</p>
       ) : null}

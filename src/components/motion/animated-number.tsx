@@ -6,17 +6,23 @@ import { formatILS } from "@/lib/format";
 
 interface AnimatedNumberProps {
   value: number;
-  format?: ((n: number) => string) | undefined;
+  formatAs?: "currency" | "integer" | undefined;
   prefix?: string | undefined;
   className?: string | undefined;
 }
 
+const formatters = {
+  currency: formatILS,
+  integer: (n: number) => String(Math.round(n)),
+} as const;
+
 export function AnimatedNumber({
   value,
-  format = formatILS,
+  formatAs = "currency",
   prefix,
   className,
 }: AnimatedNumberProps) {
+  const format = formatters[formatAs];
   const motionValue = useMotionValue(0);
   const spring = useSpring(motionValue, { duration: 800, bounce: 0 });
   const display = useTransform(spring, (current) => {
