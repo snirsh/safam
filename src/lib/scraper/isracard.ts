@@ -280,6 +280,9 @@ export async function scrapeIsracard(
       months.push({ month: cursor.getMonth() + 1, year: cursor.getFullYear() });
       cursor.setMonth(cursor.getMonth() + 1);
     }
+    // Also request next month — the current billing cycle's pending charges
+    // are in the "next" Isracard billing month (e.g., March contains Feb 3+ charges)
+    months.push({ month: cursor.getMonth() + 1, year: cursor.getFullYear() });
 
     const allTransactions: RawTransaction[] = [];
 
