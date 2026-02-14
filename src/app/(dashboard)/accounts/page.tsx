@@ -160,7 +160,9 @@ export default async function AccountsPage() {
                   )}
                   <SyncButton
                     accountId={acct.id}
-                    disabled={!acct.hasCredentials || !acct.isActive}
+                    institution={acct.institution}
+                    accountName={acct.name}
+                    disabled={process.env["NEXT_PUBLIC_DEMO_MODE"] !== "true" && (!acct.hasCredentials || !acct.isActive)}
                   />
                   {acct.accountType === "bank" && (
                     <AdjustBalanceDialog

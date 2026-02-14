@@ -13,6 +13,7 @@ import { calculateForecast } from "@/lib/forecast/calculate";
 import { CategoryPieChart } from "@/components/dashboard/category-pie-chart";
 import { IncomeExpensesChart } from "@/components/dashboard/income-expenses-chart";
 import { MotionPage, MotionList, MotionItem } from "@/components/motion";
+import { DemoWelcomeToast } from "@/components/demo/welcome-toast";
 
 export default async function DashboardPage() {
   const session = await requireAuth();
@@ -167,6 +168,7 @@ export default async function DashboardPage() {
 
   return (
     <MotionPage className="mx-auto max-w-4xl space-y-6">
+      <DemoWelcomeToast />
       <h1 className="font-mono text-xl font-bold text-foreground">
         Dashboard
       </h1>

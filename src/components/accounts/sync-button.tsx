@@ -5,18 +5,31 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { ScrapingSimulation } from "@/components/demo/scraping-simulation";
+
+const IS_DEMO = process.env["NEXT_PUBLIC_DEMO_MODE"] === "true";
 
 export function SyncButton({
   accountId,
+  institution,
+  accountName,
   disabled,
 }: {
   accountId: string;
+  institution?: string;
+  accountName?: string;
   disabled?: boolean;
 }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showSimulation, setShowSimulation] = useState(false);
 
   async function handleSync(full?: boolean) {
+    if (IS_DEMO) {
+      setShowSimulation(true);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -73,6 +86,15 @@ export function SyncButton({
       >
         {isLoading ? "Syncing..." : "Last 30 days"}
       </Button>
+
+      {IS_DEMO ? (
+        <ScrapingSimulation
+          open={showSimulation}
+          onOpenChange={setShowSimulation}
+          institution={institution ?? "leumi"}
+          accountName={accountName ?? "Account"}
+        />
+      ) : null}
     </>
   );
 }

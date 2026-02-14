@@ -13,6 +13,10 @@ export const maxDuration = 60;
 type AccountResult = { account: string; institution: string; status: string; added?: number };
 
 export async function GET(request: NextRequest) {
+  if (process.env["NEXT_PUBLIC_DEMO_MODE"] === "true") {
+    return NextResponse.json({ message: "Demo mode — scraping disabled", results: [] });
+  }
+
   // Verify Vercel Cron secret
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env["CRON_SECRET"]}`) {

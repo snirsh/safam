@@ -45,6 +45,11 @@ export async function destroySession(): Promise<void> {
 // ─── Read ───────────────────────────────────────────────
 
 export async function getSession(): Promise<SessionPayload | null> {
+  // Demo mode bypass: auto-login as the first seeded user (works in production)
+  if (process.env["NEXT_PUBLIC_DEMO_MODE"] === "true") {
+    return getDevSession();
+  }
+
   // Dev mode bypass: auto-login as the first seeded user
   if (process.env["NODE_ENV"] === "development") {
     return getDevSession();

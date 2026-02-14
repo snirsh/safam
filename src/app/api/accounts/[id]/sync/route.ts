@@ -18,6 +18,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    if (process.env["NEXT_PUBLIC_DEMO_MODE"] === "true") {
+      return NextResponse.json({ added: 0, duplicates: 0 });
+    }
+
     const session = await requireAuth();
     const { id } = await params;
     const { searchParams } = new URL(request.url);
