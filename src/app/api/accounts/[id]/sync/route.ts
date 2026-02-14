@@ -14,12 +14,14 @@ export const maxDuration = 60;
  * Manually trigger a scrape for a single account.
  */
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await requireAuth();
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const fullSync = searchParams.get("full") === "1";
 
     const [account] = await db
       .select({
@@ -64,7 +66,7 @@ export async function POST(
       encryptedCredentials: account.encryptedCredentials,
       lastSyncedAt: account.lastSyncedAt,
       accountType: account.accountType,
-    });
+    }, { fullSync });
 
     if (result.status === "error") {
       return NextResponse.json(
