@@ -12,10 +12,19 @@ import {
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { MotionFade } from "@/components/motion";
 
+interface PendingItem {
+  description: string;
+  amount: number;
+  type: "income" | "expense";
+  categoryName: string | null;
+  categoryIcon: string | null;
+}
+
 interface DataPoint {
   date: string;
   balance: number;
   label?: string;
+  items?: PendingItem[];
 }
 
 export function BalanceChart({ data }: { data: DataPoint[] }) {
@@ -79,8 +88,12 @@ export function BalanceChart({ data }: { data: DataPoint[] }) {
             content={({ active, payload }) => {
               if (!active || !payload?.[0]) return null;
               const point = payload[0].payload as DataPoint;
+              const fmt = (v: number) =>
+                new Intl.NumberFormat("he-IL", {
+                  maximumFractionDigits: 0,
+                }).format(v);
               return (
-                <div className="rounded-md border border-border bg-card px-3 py-2 shadow-md">
+                <div className="min-w-[180px] rounded-md border border-border bg-card px-3 py-2 shadow-md">
                   <p className="text-xs text-muted-foreground">{point.date}</p>
                   <p
                     className={`font-mono text-sm font-bold ${point.balance >= 0 ? "text-green-500" : "text-red-500"}`}
@@ -91,10 +104,28 @@ export function BalanceChart({ data }: { data: DataPoint[] }) {
                       maximumFractionDigits: 0,
                     }).format(point.balance)}
                   </p>
-                  {point.label ? (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {point.label}
-                    </p>
+                  {point.items && point.items.length > 0 ? (
+                    <div className="mt-1.5 space-y-1 border-t border-border pt-1.5">
+                      {point.items.map((item, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between gap-3 text-xs"
+                        >
+                          <span className="flex items-center gap-1 truncate text-muted-foreground">
+                            {item.categoryIcon ? (
+                              <span>{item.categoryIcon}</span>
+                            ) : null}
+                            <span className="truncate">{item.description}</span>
+                          </span>
+                          <span
+                            className={`shrink-0 font-mono ${item.type === "income" ? "text-green-500" : "text-red-500"}`}
+                          >
+                            {item.type === "income" ? "+" : "-"}
+                            {fmt(item.amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   ) : null}
                 </div>
               );

@@ -10,7 +10,14 @@ import { eq } from "drizzle-orm";
 import { formatILS } from "@/lib/format";
 import { PatternToggle } from "@/components/recurring/pattern-toggle";
 import { RedetectButton } from "@/components/recurring/redetect-button";
-import { MotionPage, MotionList, MotionItem, AnimatedNumber } from "@/components/motion";
+import { PatternFormDialog } from "@/components/recurring/pattern-form-dialog";
+import { PatternDeleteButton } from "@/components/recurring/pattern-delete-button";
+import {
+  MotionPage,
+  MotionList,
+  MotionItem,
+  AnimatedNumber,
+} from "@/components/motion";
 
 const frequencyLabels: Record<string, string> = {
   weekly: "Weekly",
@@ -24,31 +31,57 @@ const frequencyLabels: Record<string, string> = {
 
 export default async function RecurringPage() {
   const session = await requireAuth();
-  const parentCategories = alias(categories, "parent_categories");
+  const parentCategoriesAlias = alias(categories, "parent_categories");
 
-  const patterns = await db
-    .select({
-      id: recurringPatterns.id,
-      description: recurringPatterns.description,
-      expectedAmount: recurringPatterns.expectedAmount,
-      frequency: recurringPatterns.frequency,
-      isActive: recurringPatterns.isActive,
-      confidence: recurringPatterns.confidence,
-      nextExpectedDate: recurringPatterns.nextExpectedDate,
-      categoryName: categories.name,
-      categoryIcon: categories.icon,
-      parentCategoryName: parentCategories.name,
-      accountName: financialAccounts.name,
-    })
-    .from(recurringPatterns)
-    .leftJoin(categories, eq(recurringPatterns.categoryId, categories.id))
-    .leftJoin(parentCategories, eq(categories.parentId, parentCategories.id))
-    .leftJoin(
-      financialAccounts,
-      eq(recurringPatterns.accountId, financialAccounts.id),
-    )
-    .where(eq(recurringPatterns.householdId, session.householdId))
-    .orderBy(recurringPatterns.description);
+  const [patterns, allCategories, accounts] = await Promise.all([
+    db
+      .select({
+        id: recurringPatterns.id,
+        description: recurringPatterns.description,
+        expectedAmount: recurringPatterns.expectedAmount,
+        frequency: recurringPatterns.frequency,
+        isActive: recurringPatterns.isActive,
+        confidence: recurringPatterns.confidence,
+        nextExpectedDate: recurringPatterns.nextExpectedDate,
+        categoryId: recurringPatterns.categoryId,
+        accountId: recurringPatterns.accountId,
+        categoryName: categories.name,
+        categoryIcon: categories.icon,
+        parentCategoryName: parentCategoriesAlias.name,
+        accountName: financialAccounts.name,
+      })
+      .from(recurringPatterns)
+      .leftJoin(categories, eq(recurringPatterns.categoryId, categories.id))
+      .leftJoin(
+        parentCategoriesAlias,
+        eq(categories.parentId, parentCategoriesAlias.id),
+      )
+      .leftJoin(
+        financialAccounts,
+        eq(recurringPatterns.accountId, financialAccounts.id),
+      )
+      .where(eq(recurringPatterns.householdId, session.householdId))
+      .orderBy(recurringPatterns.description),
+    db
+      .select({
+        id: categories.id,
+        name: categories.name,
+        icon: categories.icon,
+        parentId: categories.parentId,
+      })
+      .from(categories)
+      .where(eq(categories.householdId, session.householdId))
+      .orderBy(categories.name),
+    db
+      .select({
+        id: financialAccounts.id,
+        name: financialAccounts.name,
+        accountType: financialAccounts.accountType,
+      })
+      .from(financialAccounts)
+      .where(eq(financialAccounts.householdId, session.householdId))
+      .orderBy(financialAccounts.name),
+  ]);
 
   const incomePatterns = patterns.filter(
     (p) => p.parentCategoryName === "Income",
@@ -70,7 +103,14 @@ export default async function RecurringPage() {
         <h1 className="font-mono text-xl font-bold text-foreground">
           Recurring
         </h1>
-        <RedetectButton />
+        <div className="flex items-center gap-2">
+          <PatternFormDialog
+            mode="create"
+            categories={allCategories}
+            accounts={accounts}
+          />
+          <RedetectButton />
+        </div>
       </div>
 
       {/* Summary cards */}
@@ -79,13 +119,21 @@ export default async function RecurringPage() {
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Monthly Income
           </p>
-          <AnimatedNumber value={monthlyIncome} prefix="+" className="mt-0.5 block truncate font-mono text-base font-bold text-green-500 sm:text-lg" />
+          <AnimatedNumber
+            value={monthlyIncome}
+            prefix="+"
+            className="mt-0.5 block truncate font-mono text-base font-bold text-green-500 sm:text-lg"
+          />
         </MotionItem>
         <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Monthly Expenses
           </p>
-          <AnimatedNumber value={monthlyExpenses} prefix="-" className="mt-0.5 block truncate font-mono text-base font-bold text-red-500 sm:text-lg" />
+          <AnimatedNumber
+            value={monthlyExpenses}
+            prefix="-"
+            className="mt-0.5 block truncate font-mono text-base font-bold text-red-500 sm:text-lg"
+          />
         </MotionItem>
         <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
@@ -100,8 +148,8 @@ export default async function RecurringPage() {
 
       {patterns.length === 0 ? (
         <div className="rounded-lg border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
-          No recurring patterns detected yet. Import more transactions to
-          detect patterns.
+          No recurring patterns detected yet. Import more transactions or add
+          patterns manually.
         </div>
       ) : (
         <>
@@ -111,7 +159,12 @@ export default async function RecurringPage() {
               <h2 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Income ({incomePatterns.length})
               </h2>
-              <PatternList patterns={incomePatterns} type="income" />
+              <PatternList
+                patterns={incomePatterns}
+                type="income"
+                categories={allCategories}
+                accounts={accounts}
+              />
             </div>
           ) : null}
 
@@ -121,7 +174,12 @@ export default async function RecurringPage() {
               <h2 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Expenses ({expensePatterns.length})
               </h2>
-              <PatternList patterns={expensePatterns} type="expense" />
+              <PatternList
+                patterns={expensePatterns}
+                type="expense"
+                categories={allCategories}
+                accounts={accounts}
+              />
             </div>
           ) : null}
         </>
@@ -138,17 +196,36 @@ interface PatternRow {
   isActive: boolean;
   confidence: string | null;
   nextExpectedDate: Date | null;
+  categoryId: string | null;
+  accountId: string | null;
   categoryName: string | null;
   categoryIcon: string | null;
   accountName: string | null;
 }
 
+interface CategoryOption {
+  id: string;
+  name: string;
+  icon: string | null;
+  parentId: string | null;
+}
+
+interface AccountOption {
+  id: string;
+  name: string;
+  accountType: string;
+}
+
 function PatternList({
   patterns,
   type,
+  categories,
+  accounts,
 }: {
   patterns: PatternRow[];
   type: "income" | "expense";
+  categories: CategoryOption[];
+  accounts: AccountOption[];
 }) {
   const amountColor = type === "income" ? "text-green-500" : "text-red-500";
   const prefix = type === "income" ? "+" : "-";
@@ -197,17 +274,30 @@ function PatternList({
                   </span>
                 </div>
               </div>
-              <div className="ml-4 shrink-0 text-right">
-                <p className={`font-mono text-sm font-medium ${amountColor}`}>
-                  {prefix}
-                  {formatILS(Number(p.expectedAmount))}
-                </p>
-                {p.nextExpectedDate ? (
-                  <p className="font-mono text-xs text-muted-foreground">
-                    next:{" "}
-                    {new Date(p.nextExpectedDate).toLocaleDateString("he-IL")}
+              <div className="ml-4 flex shrink-0 items-center gap-2">
+                <div className="text-right">
+                  <p
+                    className={`font-mono text-sm font-medium ${amountColor}`}
+                  >
+                    {prefix}
+                    {formatILS(Number(p.expectedAmount))}
                   </p>
-                ) : null}
+                  {p.nextExpectedDate ? (
+                    <p className="font-mono text-xs text-muted-foreground">
+                      next:{" "}
+                      {new Date(p.nextExpectedDate).toLocaleDateString(
+                        "he-IL",
+                      )}
+                    </p>
+                  ) : null}
+                </div>
+                <PatternFormDialog
+                  mode="edit"
+                  pattern={p}
+                  categories={categories}
+                  accounts={accounts}
+                />
+                <PatternDeleteButton patternId={p.id} />
               </div>
             </MotionItem>
           );

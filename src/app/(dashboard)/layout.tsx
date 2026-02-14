@@ -5,6 +5,7 @@ import { SidebarNav } from "@/components/navigation/sidebar-nav";
 import { MobileNav } from "@/components/navigation/mobile-nav";
 import { RefreshButton } from "@/components/navigation/refresh-button";
 import { DemoBanner } from "@/components/demo-banner";
+import { SafamLogo } from "@/components/safam-logo";
 
 export default async function DashboardLayout({
   children,
@@ -23,9 +24,7 @@ export default async function DashboardLayout({
       {/* Sidebar */}
       <aside className="hidden w-56 shrink-0 border-r border-border bg-card md:block">
         <div className="flex h-14 items-center justify-between border-b border-border px-4">
-          <span className="font-mono text-lg font-bold text-foreground">
-            safam
-          </span>
+          <SafamLogo size={22} />
           <ThemeToggle />
         </div>
         <SidebarNav />
@@ -34,9 +33,7 @@ export default async function DashboardLayout({
       {/* Mobile header + content */}
       <div className="flex flex-1 flex-col">
         <header className="flex h-14 items-center justify-between border-b border-border px-4 md:hidden">
-          <span className="font-mono text-lg font-bold text-foreground">
-            safam
-          </span>
+          <SafamLogo size={22} />
           <div className="flex items-center gap-2">
             <RefreshButton />
             <ThemeToggle />

@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { CategoryPieChart } from "@/components/dashboard/category-pie-chart";
 import { IncomeExpensesChart } from "@/components/dashboard/income-expenses-chart";
+import { SafamLogo } from "@/components/safam-logo";
 
 type Lang = "en" | "he";
 
@@ -162,7 +163,7 @@ export function LandingPage() {
     <div dir={dir} className="min-h-screen bg-background text-foreground">
       {/* Nav */}
       <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-border bg-background/80 px-6 py-3 backdrop-blur-sm">
-        <span className="font-mono text-xl font-bold">safam</span>
+        <SafamLogo size={24} textClassName="font-mono text-xl font-bold" />
         <div className="flex items-center gap-3">
           <button
             onClick={() => setLang(lang === "en" ? "he" : "en")}
@@ -221,8 +222,8 @@ export function LandingPage() {
               <div className="h-3 w-3 rounded-full bg-yellow-400/60" />
               <div className="h-3 w-3 rounded-full bg-green-400/60" />
             </div>
-            <span className="ml-2 font-mono text-xs text-muted-foreground">
-              safam / dashboard
+            <span className="ml-2 inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
+              <SafamLogo size={14} textClassName="font-mono text-xs" /> / dashboard
             </span>
           </div>
           {/* Dashboard content */}

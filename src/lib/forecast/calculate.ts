@@ -9,10 +9,19 @@ import { eq, and, gte, lt } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { calculateBankBalance, calculateCCLiability } from "@/lib/balance/calculate";
 
+export interface ForecastPendingItem {
+  description: string;
+  amount: number;
+  type: "income" | "expense";
+  categoryName: string | null;
+  categoryIcon: string | null;
+}
+
 export interface ForecastDataPoint {
   date: string; // YYYY-MM-DD
   balance: number;
   label?: string;
+  items?: ForecastPendingItem[];
 }
 
 export interface PendingRecurring {
@@ -181,14 +190,19 @@ export async function calculateForecast(
       }
     }
 
-    const labelText = todaysPending.map((p) => p.description).join(", ");
-
     const point: ForecastDataPoint = {
       date: dateStr,
       balance: Math.round(runningBalance),
     };
-    if (labelText) {
-      point.label = labelText;
+    if (todaysPending.length > 0) {
+      point.label = todaysPending.map((p) => p.description).join(", ");
+      point.items = todaysPending.map((p) => ({
+        description: p.description,
+        amount: p.expectedAmount,
+        type: p.type,
+        categoryName: p.categoryName,
+        categoryIcon: p.categoryIcon,
+      }));
     }
 
     dataPoints.push(point);

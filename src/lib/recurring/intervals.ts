@@ -1,4 +1,4 @@
-type Frequency =
+export type Frequency =
   | "weekly"
   | "bi_weekly"
   | "monthly"

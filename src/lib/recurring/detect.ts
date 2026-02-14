@@ -8,6 +8,7 @@ import {
   frequencyToDays,
   mode,
 } from "./intervals";
+import type { Frequency } from "./intervals";
 import { isCategoryDirectionCompatible } from "@/lib/classification/category-direction";
 
 interface DetectionResult {
@@ -24,8 +25,16 @@ interface TxRow {
   transactionType: "income" | "expense" | "transfer";
 }
 
-const MIN_OCCURRENCES = 3;
+const DEFAULT_MIN_OCCURRENCES = 3;
+const LOW_FREQ_MIN_OCCURRENCES = 2; // semi_annual/yearly need fewer samples
 const MIN_CONFIDENCE = 0.7;
+
+function getMinOccurrences(frequency: Frequency): number {
+  if (frequency === "semi_annual" || frequency === "yearly") {
+    return LOW_FREQ_MIN_OCCURRENCES;
+  }
+  return DEFAULT_MIN_OCCURRENCES;
+}
 
 function daysBetween(a: Date, b: Date): number {
   return Math.abs(
@@ -99,7 +108,8 @@ export async function detectRecurringPatterns(
   let updated = 0;
 
   for (const [, group] of groups) {
-    if (group.length < MIN_OCCURRENCES) continue;
+    // Need at least 2 transactions to compute any interval
+    if (group.length < LOW_FREQ_MIN_OCCURRENCES) continue;
 
     // Sort by date ascending
     group.sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -115,6 +125,9 @@ export async function detectRecurringPatterns(
     const medianInterval = median(intervals);
     const frequency = daysToFrequency(medianInterval);
     if (!frequency) continue;
+
+    // Check frequency-aware minimum (e.g., semi_annual only needs 2)
+    if (group.length < getMinOccurrences(frequency)) continue;
 
     // Calculate confidence
     const expectedDays = frequencyToDays[frequency];
