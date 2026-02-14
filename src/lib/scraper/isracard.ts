@@ -287,14 +287,22 @@ export async function scrapeIsracard(
       const { transactions: txns, processedDate } = await fetchTransactionsForMonth(page, month, year);
 
       let kept = 0;
+      let filteredVoucher = 0;
+      let filteredDate = 0;
       for (const txn of txns) {
         const converted = convertTransaction(txn, processedDate);
-        if (converted && new Date(converted.date) >= start) {
-          allTransactions.push(converted);
-          kept++;
+        if (!converted) {
+          filteredVoucher++;
+          continue;
         }
+        if (new Date(converted.date) < start) {
+          filteredDate++;
+          continue;
+        }
+        allTransactions.push(converted);
+        kept++;
       }
-      console.log(`[isracard] ${year}-${String(month).padStart(2, "0")}: ${txns.length} raw → ${kept} kept`);
+      console.log(`[isracard] ${year}-${String(month).padStart(2, "0")}: ${txns.length} raw → ${kept} kept (voucher-filtered: ${filteredVoucher}, date-filtered: ${filteredDate})`);
     }
 
     await browser.close();

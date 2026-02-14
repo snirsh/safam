@@ -42,7 +42,7 @@ export function SyncButton({
   }
 
   return (
-    <div className="flex gap-2">
+    <>
       <motion.div whileTap={{ scale: 0.97 }}>
         <Button
           size="sm"
@@ -64,17 +64,15 @@ export function SyncButton({
           </AnimatePresence>
         </Button>
       </motion.div>
-      <motion.div whileTap={{ scale: 0.97 }}>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-10 sm:h-8 text-muted-foreground"
-          onClick={() => handleSync(true)}
-          disabled={isLoading || disabled}
-        >
-          {isLoading ? "..." : "Last 30 days"}
-        </Button>
-      </motion.div>
-    </div>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-10 sm:h-8"
+        onClick={() => handleSync(true)}
+        disabled={isLoading || disabled}
+      >
+        {isLoading ? "Syncing..." : "Last 30 days"}
+      </Button>
+    </>
   );
 }
