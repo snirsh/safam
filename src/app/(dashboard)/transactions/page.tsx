@@ -36,11 +36,15 @@ export default async function TransactionsPage({
   const isCurrentMonth =
     year === now.getFullYear() && month === now.getMonth();
 
+  // Use billing date (processedDate) when available, fall back to purchase date.
+  // This correctly groups CC transactions by billing cycle instead of purchase date.
+  const effectiveDate = sql`COALESCE(${transactions.processedDate}, ${transactions.date})`;
+
   // Build filter conditions
   const conditions = [
     eq(transactions.householdId, session.householdId),
-    gte(transactions.date, start),
-    lt(transactions.date, end),
+    gte(effectiveDate, start),
+    lt(effectiveDate, end),
   ];
 
   if (params.category) {
@@ -98,6 +102,8 @@ export default async function TransactionsPage({
       categoryParentId: categories.parentId,
       classificationMethod: transactions.classificationMethod,
       accountName: financialAccounts.name,
+      accountType: financialAccounts.accountType,
+      processedDate: transactions.processedDate,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -106,7 +112,7 @@ export default async function TransactionsPage({
       eq(transactions.accountId, financialAccounts.id),
     )
     .where(and(...conditions))
-    .orderBy(sql`${transactions.date} DESC`);
+    .orderBy(sql`${effectiveDate} DESC`);
 
   const income = txns
     .filter((t) => t.type === "income")
@@ -144,7 +150,7 @@ export default async function TransactionsPage({
 
   // Fetch accounts for filter
   const accountsList = await db
-    .select({ id: financialAccounts.id, name: financialAccounts.name })
+    .select({ id: financialAccounts.id, name: financialAccounts.name, accountType: financialAccounts.accountType })
     .from(financialAccounts)
     .where(eq(financialAccounts.householdId, session.householdId))
     .orderBy(financialAccounts.name);
@@ -250,6 +256,11 @@ export default async function TransactionsPage({
                   >
                     <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-muted-foreground">
                       {new Date(tx.date).toLocaleDateString("he-IL")}
+                      {tx.processedDate && tx.accountType === "credit_card" ? (
+                        <span className="block text-[10px] text-muted-foreground/60">
+                          billed {new Date(tx.processedDate).toLocaleDateString("he-IL")}
+                        </span>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 text-sm text-foreground">
                       {tx.description}
@@ -295,6 +306,11 @@ export default async function TransactionsPage({
                     <div className="mt-1 flex items-center gap-2">
                       <span className="font-mono text-xs text-muted-foreground">
                         {new Date(tx.date).toLocaleDateString("he-IL")}
+                        {tx.processedDate && tx.accountType === "credit_card" ? (
+                          <span className="ml-1 text-[10px] text-muted-foreground/60">
+                            (billed {new Date(tx.processedDate).toLocaleDateString("he-IL")})
+                          </span>
+                        ) : null}
                       </span>
                       <CategorySelector
                         transactionId={tx.id}

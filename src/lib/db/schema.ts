@@ -145,6 +145,7 @@ export const transactions = pgTable(
   (table) => [
     uniqueIndex("tx_idempotent_idx").on(table.accountId, table.externalId),
     index("tx_household_date_idx").on(table.householdId, table.date),
+    index("tx_household_processed_date_idx").on(table.householdId, table.processedDate),
     index("tx_category_idx").on(table.categoryId),
   ],
 );

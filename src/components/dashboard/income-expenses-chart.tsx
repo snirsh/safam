@@ -68,7 +68,8 @@ export function IncomeExpensesChart({ data }: { data: MonthlyData[] }) {
                       {new Intl.NumberFormat("he-IL", {
                         style: "currency",
                         currency: "ILS",
-                        maximumFractionDigits: 0,
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
                       }).format(entry.value as number)}
                     </p>
                   ))}

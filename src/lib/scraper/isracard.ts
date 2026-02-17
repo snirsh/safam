@@ -232,7 +232,10 @@ async function fetchTransactionsForMonth(
   if (!bean) return { transactions: [], processedDate: "" };
 
   const allTxns: IsracardTxn[] = [];
-  let processedDate = new Date().toISOString();
+  // Default processedDate = 1st of the billing month being queried.
+  // Isracard groups transactions by billing month, so this is the correct
+  // fallback when per-transaction fullPaymentDate is missing.
+  let processedDate = new Date(year, month - 1, 1).toISOString();
 
   for (const key of Object.keys(bean)) {
     if (!key.startsWith("Index")) continue;

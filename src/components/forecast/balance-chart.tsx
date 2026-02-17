@@ -90,7 +90,8 @@ export function BalanceChart({ data }: { data: DataPoint[] }) {
               const point = payload[0].payload as DataPoint;
               const fmt = (v: number) =>
                 new Intl.NumberFormat("he-IL", {
-                  maximumFractionDigits: 0,
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
                 }).format(v);
               return (
                 <div className="min-w-[180px] rounded-md border border-border bg-card px-3 py-2 shadow-md">
@@ -101,7 +102,8 @@ export function BalanceChart({ data }: { data: DataPoint[] }) {
                     {new Intl.NumberFormat("he-IL", {
                       style: "currency",
                       currency: "ILS",
-                      maximumFractionDigits: 0,
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
                     }).format(point.balance)}
                   </p>
                   {point.items && point.items.length > 0 ? (

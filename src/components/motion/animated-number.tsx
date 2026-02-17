@@ -26,7 +26,7 @@ export function AnimatedNumber({
   const motionValue = useMotionValue(0);
   const spring = useSpring(motionValue, { duration: 800, bounce: 0 });
   const display = useTransform(spring, (current) => {
-    const formatted = format(Math.round(current));
+    const formatted = format(current);
     return prefix ? `${prefix}${formatted}` : formatted;
   });
   const ref = useRef(false);

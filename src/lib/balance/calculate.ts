@@ -57,7 +57,7 @@ export async function calculateBankBalance(
     return {
       accountId: r.accountId,
       accountName: r.accountName,
-      balance: Math.round(balance),
+      balance,
     };
   });
 
@@ -142,12 +142,12 @@ export async function calculateCCLiability(
         and(
           eq(transactions.accountId, acct.id),
           eq(transactions.transactionType, "expense"),
-          gte(transactions.date, cycleStart),
-          lt(transactions.date, cycleEnd),
+          gte(sql`COALESCE(${transactions.processedDate}, ${transactions.date})`, cycleStart),
+          lt(sql`COALESCE(${transactions.processedDate}, ${transactions.date})`, cycleEnd),
         ),
       );
 
-    const liability = Math.round(Math.abs(Number(row?.totalExpenses ?? 0)));
+    const liability = Math.abs(Number(row?.totalExpenses ?? 0));
     accounts.push({
       accountId: acct.id,
       accountName: acct.name,

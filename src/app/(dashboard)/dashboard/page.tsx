@@ -20,6 +20,9 @@ export default async function DashboardPage() {
   const now = new Date();
   const { start, end } = getMonthBounds(now.getFullYear(), now.getMonth());
 
+  // Use billing date when available, fall back to purchase date
+  const effectiveDate = sql`COALESCE(${transactions.processedDate}, ${transactions.date})`;
+
   // Fetch this month's transactions (all accounts, for spending overview)
   const monthlyTxns = await db
     .select({
@@ -30,8 +33,8 @@ export default async function DashboardPage() {
     .where(
       and(
         eq(transactions.householdId, session.householdId),
-        gte(transactions.date, start),
-        lt(transactions.date, end),
+        gte(effectiveDate, start),
+        lt(effectiveDate, end),
       ),
     )
     .groupBy(transactions.transactionType);
@@ -56,8 +59,8 @@ export default async function DashboardPage() {
         .where(
           and(
             eq(transactions.householdId, session.householdId),
-            gte(transactions.date, start),
-            lt(transactions.date, end),
+            gte(effectiveDate, start),
+            lt(effectiveDate, end),
           ),
         ),
       db
@@ -87,8 +90,8 @@ export default async function DashboardPage() {
       and(
         eq(transactions.householdId, session.householdId),
         eq(transactions.transactionType, "expense"),
-        gte(transactions.date, start),
-        lt(transactions.date, end),
+        gte(effectiveDate, start),
+        lt(effectiveDate, end),
       ),
     )
     .groupBy(categories.name, categories.icon)
@@ -110,7 +113,7 @@ export default async function DashboardPage() {
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
   const trendData = await db
     .select({
-      month: sql<string>`TO_CHAR(${transactions.date}, 'YYYY-MM')`,
+      month: sql<string>`TO_CHAR(${effectiveDate}, 'YYYY-MM')`,
       type: transactions.transactionType,
       total: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
     })
@@ -118,15 +121,15 @@ export default async function DashboardPage() {
     .where(
       and(
         eq(transactions.householdId, session.householdId),
-        gte(transactions.date, sixMonthsAgo),
-        lt(transactions.date, end),
+        gte(effectiveDate, sixMonthsAgo),
+        lt(effectiveDate, end),
       ),
     )
     .groupBy(
-      sql`TO_CHAR(${transactions.date}, 'YYYY-MM')`,
+      sql`TO_CHAR(${effectiveDate}, 'YYYY-MM')`,
       transactions.transactionType,
     )
-    .orderBy(sql`TO_CHAR(${transactions.date}, 'YYYY-MM') ASC`);
+    .orderBy(sql`TO_CHAR(${effectiveDate}, 'YYYY-MM') ASC`);
 
   const months = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);

@@ -5,7 +5,7 @@ import {
   categories,
   financialAccounts,
 } from "@/lib/db/schema";
-import { eq, and, gte, lt } from "drizzle-orm";
+import { eq, and, gte, lt, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { calculateBankBalance, calculateCCLiability } from "@/lib/balance/calculate";
 
@@ -108,8 +108,8 @@ export async function calculateForecast(
     .where(
       and(
         eq(transactions.householdId, householdId),
-        gte(transactions.date, monthStart),
-        lt(transactions.date, monthEnd),
+        gte(sql`COALESCE(${transactions.processedDate}, ${transactions.date})`, monthStart),
+        lt(sql`COALESCE(${transactions.processedDate}, ${transactions.date})`, monthEnd),
       ),
     );
 
@@ -192,7 +192,7 @@ export async function calculateForecast(
 
     const point: ForecastDataPoint = {
       date: dateStr,
-      balance: Math.round(runningBalance),
+      balance: runningBalance,
     };
     if (todaysPending.length > 0) {
       point.label = todaysPending.map((p) => p.description).join(", ");
@@ -222,12 +222,12 @@ export async function calculateForecast(
       : bankBalance;
 
   return {
-    bankBalance: Math.round(bankBalance),
+    bankBalance,
     projectedEndOfMonth,
     isSafe: projectedEndOfMonth >= 0,
     ccLiability,
-    totalPendingBankIncome: Math.round(totalPendingBankIncome),
-    totalPendingBankExpenses: Math.round(totalPendingBankExpenses),
+    totalPendingBankIncome,
+    totalPendingBankExpenses,
     dataPoints,
     pendingRecurring,
   };
