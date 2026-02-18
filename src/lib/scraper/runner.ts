@@ -34,13 +34,13 @@ export async function scrapeAccount(
     const credsJson = decrypt(account.encryptedCredentials);
     const credentials = JSON.parse(credsJson) as Record<string, string>;
 
-    // Incremental: lastSyncedAt - 1 day overlap. First/full: 30 days max.
-    // For bulk historical loads, use the local scrape + ingest-dump scripts.
+    // Incremental: lastSyncedAt - 1 day overlap.
+    // Full sync: 730 days (2 years) to re-fetch and fix historical processedDate values.
     let startDate: Date;
     if (!options?.fullSync && account.lastSyncedAt) {
       startDate = new Date(account.lastSyncedAt.getTime() - 24 * 60 * 60 * 1000);
     } else {
-      startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      startDate = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000);
     }
 
     const result = await (async () => {

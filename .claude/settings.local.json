@@ -36,7 +36,11 @@
       "Bash(pnpm exec oxlint:*)",
       "Bash(python3:*)",
       "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_YXNfVOezQ2c5@ep-misty-hall-agtdlw17-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require\" pnpm tsx:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(pnpm drizzle-kit push:*)",
+      "Bash(pnpm tsx:*)",
+      "Bash(pnpm tsc:*)",
+      "Bash(find:*)"
     ]
   }
 }

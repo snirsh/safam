@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { financialAccounts, transactions, syncLogs } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { encrypt } from "@/lib/crypto/encryption";
 import type { TransformedTransaction } from "./types";
 
@@ -65,6 +65,21 @@ export async function ingestTransactions(
         }
       } else {
         duplicates++;
+        // Update processedDate for existing transactions (fixes bad values from old scraper)
+        if (tx.processedDate) {
+          await db
+            .update(transactions)
+            .set({
+              processedDate: new Date(tx.processedDate),
+              updatedAt: new Date(),
+            })
+            .where(
+              and(
+                eq(transactions.accountId, accountId),
+                eq(transactions.externalId, tx.externalId),
+              ),
+            );
+        }
       }
     } catch (err) {
       console.error(`[ingest] Failed to insert tx ${tx.externalId}:`, err);
