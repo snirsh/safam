@@ -9,6 +9,7 @@ import {
 import { requireAuth } from "@/lib/auth/session";
 import { eq, sql, and, gte, lt } from "drizzle-orm";
 import { formatILS, getMonthBounds } from "@/lib/format";
+import { effectiveDateExpr } from "@/lib/db/helpers";
 import { calculateForecast } from "@/lib/forecast/calculate";
 import { CategoryPieChart } from "@/components/dashboard/category-pie-chart";
 import { IncomeExpensesChart } from "@/components/dashboard/income-expenses-chart";
@@ -20,8 +21,8 @@ export default async function DashboardPage() {
   const now = new Date();
   const { start, end } = getMonthBounds(now.getFullYear(), now.getMonth());
 
-  // Use billing date when available, fall back to purchase date
-  const effectiveDate = sql`COALESCE(${transactions.processedDate}, ${transactions.date})`;
+  // Use billing date when available and valid, fall back to purchase date
+  const effectiveDate = effectiveDateExpr();
 
   // Fetch this month's transactions (all accounts, for spending overview)
   const monthlyTxns = await db

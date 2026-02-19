@@ -5,6 +5,7 @@ import { categories, financialAccounts, transactions } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/session";
 import { eq, sql, and, gte, lt, ilike } from "drizzle-orm";
 import { formatILS, parseMonth, monthKey, monthLabel } from "@/lib/format";
+import { effectiveDateExpr } from "@/lib/db/helpers";
 import { FilterBar } from "@/components/transactions/filter-bar";
 import { CategorySelector } from "@/components/transactions/category-selector";
 import { ClassificationBadge } from "@/components/transactions/classification-badge";
@@ -36,9 +37,8 @@ export default async function TransactionsPage({
   const isCurrentMonth =
     year === now.getFullYear() && month === now.getMonth();
 
-  // Use billing date (processedDate) when available, fall back to purchase date.
-  // This correctly groups CC transactions by billing cycle instead of purchase date.
-  const effectiveDate = sql`COALESCE(${transactions.processedDate}, ${transactions.date})`;
+  // Use billing date (processedDate) when available and valid, fall back to purchase date.
+  const effectiveDate = effectiveDateExpr();
 
   // Build filter conditions
   const conditions = [
@@ -192,25 +192,25 @@ export default async function TransactionsPage({
 
       {/* Month summary */}
       <MotionList className="grid grid-cols-3 gap-2 sm:gap-4">
-        <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+        <MotionItem className="min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Income
           </p>
-          <AnimatedNumber value={income} className="mt-0.5 block truncate font-mono text-base font-bold text-green-500 sm:text-lg" />
+          <AnimatedNumber value={income} className="mt-0.5 block truncate font-mono text-sm font-bold text-green-500 sm:text-lg" />
         </MotionItem>
-        <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+        <MotionItem className="min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Expenses
           </p>
-          <AnimatedNumber value={expenses} className="mt-0.5 block truncate font-mono text-base font-bold text-red-500 sm:text-lg" />
+          <AnimatedNumber value={expenses} className="mt-0.5 block truncate font-mono text-sm font-bold text-red-500 sm:text-lg" />
         </MotionItem>
-        <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+        <MotionItem className="min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Balance
           </p>
           <AnimatedNumber
             value={income - expenses}
-            className={`mt-0.5 block truncate font-mono text-base font-bold sm:text-lg ${income - expenses >= 0 ? "text-green-500" : "text-red-500"}`}
+            className={`mt-0.5 block truncate font-mono text-sm font-bold sm:text-lg ${income - expenses >= 0 ? "text-green-500" : "text-red-500"}`}
           />
         </MotionItem>
       </MotionList>
@@ -296,15 +296,15 @@ export default async function TransactionsPage({
             {txns.map((tx) => (
               <MotionItem
                 key={tx.id}
-                className="rounded-lg border border-border bg-card px-3 py-3.5"
+                className="overflow-hidden rounded-lg border border-border bg-card px-3 py-3.5"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm text-foreground">
                       {tx.description}
                     </p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className="font-mono text-xs text-muted-foreground">
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <span className="shrink-0 font-mono text-xs text-muted-foreground">
                         {new Date(tx.date).toLocaleDateString("he-IL")}
                         {tx.processedDate && tx.accountType === "credit_card" ? (
                           <span className="ml-1 text-[10px] text-muted-foreground/60">
@@ -322,7 +322,7 @@ export default async function TransactionsPage({
                     </div>
                   </div>
                   <span
-                    className={`ml-3 shrink-0 font-mono text-sm font-medium ${tx.type === "income" ? "text-green-500" : tx.type === "transfer" ? "text-muted-foreground" : "text-red-500"}`}
+                    className={`shrink-0 font-mono text-sm font-medium ${tx.type === "income" ? "text-green-500" : tx.type === "transfer" ? "text-muted-foreground" : "text-red-500"}`}
                   >
                     {tx.type === "income" ? "+" : tx.type === "transfer" ? "" : "-"}
                     {formatILS(Math.abs(Number(tx.amount)))}

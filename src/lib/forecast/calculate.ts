@@ -5,9 +5,10 @@ import {
   categories,
   financialAccounts,
 } from "@/lib/db/schema";
-import { eq, and, gte, lt, sql } from "drizzle-orm";
+import { eq, and, gte, lt } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { calculateBankBalance, calculateCCLiability } from "@/lib/balance/calculate";
+import { effectiveDateExpr } from "@/lib/db/helpers";
 
 export interface ForecastPendingItem {
   description: string;
@@ -79,6 +80,7 @@ export async function calculateForecast(
       description: recurringPatterns.description,
       expectedAmount: recurringPatterns.expectedAmount,
       nextExpectedDate: recurringPatterns.nextExpectedDate,
+      accountId: recurringPatterns.accountId,
       categoryName: categories.name,
       categoryIcon: categories.icon,
       parentCategoryName: parentCategories.name,
@@ -99,23 +101,26 @@ export async function calculateForecast(
     );
 
   // 4. Get this month's transaction descriptions for fulfillment matching
+  const effDate = effectiveDateExpr();
   const monthTxns = await db
     .select({
       description: transactions.description,
       amount: transactions.amount,
+      accountId: transactions.accountId,
     })
     .from(transactions)
     .where(
       and(
         eq(transactions.householdId, householdId),
-        gte(sql`COALESCE(${transactions.processedDate}, ${transactions.date})`, monthStart),
-        lt(sql`COALESCE(${transactions.processedDate}, ${transactions.date})`, monthEnd),
+        gte(effDate, monthStart),
+        lt(effDate, monthEnd),
       ),
     );
 
   const monthDescriptions = monthTxns.map((t) => ({
     desc: t.description.trim().toLowerCase(),
     amount: Math.abs(Number(t.amount)),
+    accountId: t.accountId,
   }));
 
   // 5. Determine which patterns are still pending
@@ -125,8 +130,10 @@ export async function calculateForecast(
     const expectedAmt = Number(pattern.expectedAmount);
     const normalizedDesc = pattern.description.trim().toLowerCase();
 
-    // Check if already fulfilled this month
+    // Check if already fulfilled this month (match same account to avoid
+    // CC transactions being matched against bank patterns and vice-versa)
     const fulfilled = monthDescriptions.some((t) => {
+      if (pattern.accountId && t.accountId !== pattern.accountId) return false;
       const descMatch =
         t.desc.includes(normalizedDesc) || normalizedDesc.includes(t.desc);
       const amountTolerance = expectedAmt * 0.2;

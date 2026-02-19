@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { financialAccounts, transactions } from "@/lib/db/schema";
 import { eq, and, sql, gte, lt } from "drizzle-orm";
+import { effectiveDateExpr } from "@/lib/db/helpers";
 
 export interface AccountBalance {
   accountId: string;
@@ -133,6 +134,7 @@ export async function calculateCCLiability(
       monthEnd,
     );
 
+    const effDate = effectiveDateExpr();
     const [row] = await db
       .select({
         totalExpenses: sql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
@@ -142,8 +144,8 @@ export async function calculateCCLiability(
         and(
           eq(transactions.accountId, acct.id),
           eq(transactions.transactionType, "expense"),
-          gte(sql`COALESCE(${transactions.processedDate}, ${transactions.date})`, cycleStart),
-          lt(sql`COALESCE(${transactions.processedDate}, ${transactions.date})`, cycleEnd),
+          gte(effDate, cycleStart),
+          lt(effDate, cycleEnd),
         ),
       );
 

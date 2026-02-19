@@ -115,33 +115,33 @@ export default async function RecurringPage() {
 
       {/* Summary cards */}
       <MotionList className="grid grid-cols-3 gap-2 sm:gap-4">
-        <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+        <MotionItem className="min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Monthly Income
           </p>
           <AnimatedNumber
             value={monthlyIncome}
             prefix="+"
-            className="mt-0.5 block truncate font-mono text-base font-bold text-green-500 sm:text-lg"
+            className="mt-0.5 block truncate font-mono text-sm font-bold text-green-500 sm:text-lg"
           />
         </MotionItem>
-        <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+        <MotionItem className="min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Monthly Expenses
           </p>
           <AnimatedNumber
             value={monthlyExpenses}
             prefix="-"
-            className="mt-0.5 block truncate font-mono text-base font-bold text-red-500 sm:text-lg"
+            className="mt-0.5 block truncate font-mono text-sm font-bold text-red-500 sm:text-lg"
           />
         </MotionItem>
-        <MotionItem className="rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+        <MotionItem className="min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             Net Recurring
           </p>
           <AnimatedNumber
             value={monthlyIncome - monthlyExpenses}
-            className={`mt-0.5 block truncate font-mono text-base font-bold sm:text-lg ${monthlyIncome - monthlyExpenses >= 0 ? "text-green-500" : "text-red-500"}`}
+            className={`mt-0.5 block truncate font-mono text-sm font-bold sm:text-lg ${monthlyIncome - monthlyExpenses >= 0 ? "text-green-500" : "text-red-500"}`}
           />
         </MotionItem>
       </MotionList>
@@ -251,7 +251,7 @@ function PatternList({
           return (
             <MotionItem
               key={p.id}
-              className="flex items-center justify-between px-4 py-3"
+              className="flex items-center justify-between gap-2 px-3 py-3 sm:px-4"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -260,7 +260,7 @@ function PatternList({
                     {p.description}
                   </p>
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-2 pl-4">
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-4 sm:gap-2">
                   {p.categoryName ? (
                     <span className="inline-flex items-center gap-1 rounded-md bg-accent px-1.5 py-0.5 text-xs text-muted-foreground">
                       {p.categoryIcon} {p.categoryName}
@@ -274,16 +274,16 @@ function PatternList({
                   </span>
                 </div>
               </div>
-              <div className="ml-4 flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 items-center gap-1 sm:gap-2">
                 <div className="text-right">
                   <p
-                    className={`font-mono text-sm font-medium ${amountColor}`}
+                    className={`font-mono text-xs font-medium sm:text-sm ${amountColor}`}
                   >
                     {prefix}
                     {formatILS(Number(p.expectedAmount))}
                   </p>
                   {p.nextExpectedDate ? (
-                    <p className="font-mono text-xs text-muted-foreground">
+                    <p className="hidden font-mono text-xs text-muted-foreground sm:block">
                       next:{" "}
                       {new Date(p.nextExpectedDate).toLocaleDateString(
                         "he-IL",

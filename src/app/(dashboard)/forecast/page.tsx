@@ -44,31 +44,31 @@ export default async function ForecastPage() {
       </MotionList>
 
       {/* Detail cards */}
-      <MotionList className="grid grid-cols-3 gap-4">
-        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Pending Bank Income
+      <MotionList className="grid grid-cols-3 gap-2 sm:gap-4">
+        <MotionItem className="min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
+            Pending Income
           </p>
-          <p className="mt-0.5 font-mono text-lg font-bold text-green-500">
+          <p className="mt-0.5 truncate font-mono text-sm font-bold text-green-500 sm:text-lg">
             +{formatILS(forecast.totalPendingBankIncome)}
           </p>
         </MotionItem>
-        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Pending Bank Expenses
+        <MotionItem className="min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
+            Pending Expenses
           </p>
-          <p className="mt-0.5 font-mono text-lg font-bold text-red-500">
+          <p className="mt-0.5 truncate font-mono text-sm font-bold text-red-500 sm:text-lg">
             -{formatILS(forecast.totalPendingBankExpenses)}
           </p>
         </MotionItem>
-        <MotionItem className="rounded-lg border border-border bg-card px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <MotionItem className="min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
             CC Liability
           </p>
-          <p className="mt-0.5 font-mono text-lg font-bold text-muted-foreground">
+          <p className="mt-0.5 truncate font-mono text-sm font-bold text-muted-foreground sm:text-lg">
             {formatILS(forecast.ccLiability)}
           </p>
-          <p className="text-xs text-muted-foreground">hits bank next month</p>
+          <p className="hidden text-xs text-muted-foreground sm:block">hits bank next month</p>
         </MotionItem>
       </MotionList>
 
@@ -91,12 +91,12 @@ export default async function ForecastPage() {
               {forecast.pendingRecurring.map((p) => (
                 <MotionItem
                   key={p.id}
-                  className="flex items-center justify-between px-4 py-3"
+                  className="flex items-center justify-between gap-2 px-3 py-3 sm:px-4"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${p.accountType === "bank" ? "bg-blue-500/10 text-blue-500" : "bg-orange-500/10 text-orange-500"}`}
+                        className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${p.accountType === "bank" ? "bg-blue-500/10 text-blue-500" : "bg-orange-500/10 text-orange-500"}`}
                       >
                         {p.accountType === "bank" ? "Bank" : "CC"}
                       </span>
@@ -104,7 +104,7 @@ export default async function ForecastPage() {
                         {p.description}
                       </p>
                     </div>
-                    <div className="mt-0.5 flex items-center gap-2">
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                       <span className="font-mono text-xs text-muted-foreground">
                         {p.expectedDate}
                       </span>
@@ -116,7 +116,7 @@ export default async function ForecastPage() {
                     </div>
                   </div>
                   <p
-                    className={`ml-4 shrink-0 font-mono text-sm font-medium ${p.type === "income" ? "text-green-500" : "text-red-500"}`}
+                    className={`shrink-0 font-mono text-xs font-medium sm:text-sm ${p.type === "income" ? "text-green-500" : "text-red-500"}`}
                   >
                     {p.type === "income" ? "+" : "-"}
                     {formatILS(p.expectedAmount)}
