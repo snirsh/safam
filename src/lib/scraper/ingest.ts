@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { financialAccounts, transactions, syncLogs } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { encrypt } from "@/lib/crypto/encryption";
 import type { TransformedTransaction } from "./types";
 
@@ -77,6 +77,7 @@ export async function ingestTransactions(
               and(
                 eq(transactions.accountId, accountId),
                 eq(transactions.externalId, tx.externalId),
+                sql`(${transactions.processedDate} IS NULL OR ${transactions.processedDate} > ${new Date(tx.processedDate)})`,
               ),
             );
         }

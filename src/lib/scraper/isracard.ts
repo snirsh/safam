@@ -311,8 +311,28 @@ export async function scrapeIsracard(
       console.log(`[isracard] ${year}-${String(month).padStart(2, "0")}: ${txns.length} raw → ${kept} kept (voucher-filtered: ${filteredVoucher}, date-filtered: ${filteredDate})`);
     }
 
+    // Deduplicate: same txn from multiple month queries → keep earliest processedDate
+    const seen = new Map<number, RawTransaction>();
+    for (const tx of allTransactions) {
+      const id = tx.identifier as number;
+      const existing = seen.get(id);
+      if (!existing) {
+        seen.set(id, tx);
+      } else if (
+        tx.processedDate &&
+        existing.processedDate &&
+        new Date(tx.processedDate) < new Date(existing.processedDate)
+      ) {
+        seen.set(id, tx);
+      }
+    }
+    const dedupedTransactions = Array.from(seen.values());
+    console.log(
+      `[isracard] Deduplication: ${allTransactions.length} → ${dedupedTransactions.length} transactions`,
+    );
+
     await browser.close();
-    return { success: true, transactions: allTransactions };
+    return { success: true, transactions: dedupedTransactions };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown Isracard error";
     if (browser) {
