@@ -4,8 +4,9 @@ import { db } from "@/lib/db";
 import { categories, financialAccounts, transactions } from "@/lib/db/schema";
 import { requireAuth } from "@/lib/auth/session";
 import { eq, sql, and, gte, lt, ilike } from "drizzle-orm";
-import { formatILS, parseMonth, monthKey, monthLabel } from "@/lib/format";
+import { formatILS, parseMonth, monthKey, monthLabel, billingDateLabel } from "@/lib/format";
 import { effectiveDateExpr } from "@/lib/db/helpers";
+import { getBillingCycleBounds } from "@/lib/balance/calculate";
 import { FilterBar } from "@/components/transactions/filter-bar";
 import { CategorySelector } from "@/components/transactions/category-selector";
 import { ClassificationBadge } from "@/components/transactions/classification-badge";
@@ -13,6 +14,7 @@ import { MotionPage, MotionList, MotionItem, MotionTbody, MotionTr, staggerConta
 
 interface SearchParams {
   month?: string;
+  view?: string;
   category?: string;
   account?: string;
   type?: string;
@@ -27,9 +29,10 @@ export default async function TransactionsPage({
   const session = await requireAuth();
   const params = await searchParams;
   const { year, month } = parseMonth(params.month);
+  const isBillingView = params.view === "billing";
 
-  const start = new Date(year, month, 1);
-  const end = new Date(year, month + 1, 1);
+  const calendarStart = new Date(year, month, 1);
+  const calendarEnd = new Date(year, month + 1, 1);
 
   const prevMonth = new Date(year, month - 1, 1);
   const nextMonth = new Date(year, month + 1, 1);
@@ -40,12 +43,54 @@ export default async function TransactionsPage({
   // Use billing date (processedDate) when available and valid, fall back to purchase date.
   const effectiveDate = effectiveDateExpr();
 
+  // In billing view, determine the billing cycle bounds from the CC account's billingDay
+  let activeBillingDay: number | null = null;
+  if (isBillingView) {
+    const ccAccounts = await db
+      .select({
+        id: financialAccounts.id,
+        billingDay: financialAccounts.billingDay,
+      })
+      .from(financialAccounts)
+      .where(
+        and(
+          eq(financialAccounts.householdId, session.householdId),
+          eq(financialAccounts.accountType, "credit_card"),
+        ),
+      );
+
+    const selectedCC = params.account
+      ? ccAccounts.find((a) => a.id === params.account)
+      : ccAccounts[0];
+
+    if (selectedCC?.billingDay) {
+      activeBillingDay = selectedCC.billingDay;
+    }
+  }
+
+  const { start, end } =
+    isBillingView && activeBillingDay !== null
+      ? (() => {
+          const { cycleStart, cycleEnd } = getBillingCycleBounds(
+            activeBillingDay,
+            calendarStart,
+            calendarEnd,
+          );
+          return { start: cycleStart, end: cycleEnd };
+        })()
+      : { start: calendarStart, end: calendarEnd };
+
   // Build filter conditions
   const conditions = [
     eq(transactions.householdId, session.householdId),
     gte(effectiveDate, start),
     lt(effectiveDate, end),
   ];
+
+  // In billing view without a specific account filter, auto-restrict to CC accounts
+  if (isBillingView && !params.account) {
+    conditions.push(eq(financialAccounts.accountType, "credit_card"));
+  }
 
   if (params.category) {
     // Also match parent category — if selected category is a parent,
@@ -157,31 +202,50 @@ export default async function TransactionsPage({
 
   return (
     <MotionPage className="mx-auto max-w-4xl space-y-6">
-      {/* Header with month navigation */}
-      <div className="flex items-center justify-between">
-        <h1 className="font-mono text-xl font-bold text-foreground">
-          Transactions
-        </h1>
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/transactions?month=${monthKey(prevMonth.getFullYear(), prevMonth.getMonth())}`}
-            className="rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            &larr;
-          </Link>
-          <span className="min-w-[140px] text-center font-mono text-sm text-foreground">
-            {monthLabel(year, month)}
-          </span>
-          {isCurrentMonth ? (
-            <span className="w-7" />
-          ) : (
+      {/* Header with month navigation + view toggle */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h1 className="font-mono text-xl font-bold text-foreground">
+            Transactions
+          </h1>
+          <div className="flex items-center gap-2">
             <Link
-              href={`/transactions?month=${monthKey(nextMonth.getFullYear(), nextMonth.getMonth())}`}
+              href={`/transactions?month=${monthKey(prevMonth.getFullYear(), prevMonth.getMonth())}${isBillingView ? "&view=billing" : ""}${params.account ? `&account=${params.account}` : ""}`}
               className="rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              &rarr;
+              &larr;
             </Link>
-          )}
+            <span className="min-w-[140px] text-center font-mono text-sm text-foreground">
+              {isBillingView && activeBillingDay
+                ? billingDateLabel(year, month, activeBillingDay)
+                : monthLabel(year, month)}
+            </span>
+            {isCurrentMonth ? (
+              <span className="w-7" />
+            ) : (
+              <Link
+                href={`/transactions?month=${monthKey(nextMonth.getFullYear(), nextMonth.getMonth())}${isBillingView ? "&view=billing" : ""}${params.account ? `&account=${params.account}` : ""}`}
+                className="rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                &rarr;
+              </Link>
+            )}
+          </div>
+        </div>
+        {/* View toggle */}
+        <div className="flex rounded-md border border-border">
+          <Link
+            href={`/transactions?month=${monthKey(year, month)}${params.account ? `&account=${params.account}` : ""}${params.category ? `&category=${params.category}` : ""}${params.type ? `&type=${params.type}` : ""}${params.search ? `&search=${params.search}` : ""}`}
+            className={`relative px-3 py-1 text-xs transition-colors ${!isBillingView ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"} rounded-l-md`}
+          >
+            Calendar
+          </Link>
+          <Link
+            href={`/transactions?month=${monthKey(year, month)}&view=billing${params.account ? `&account=${params.account}` : ""}${params.category ? `&category=${params.category}` : ""}${params.type ? `&type=${params.type}` : ""}${params.search ? `&search=${params.search}` : ""}`}
+            className={`relative px-3 py-1 text-xs transition-colors ${isBillingView ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"} rounded-r-md`}
+          >
+            Billing Cycle
+          </Link>
         </div>
       </div>
 
@@ -190,23 +254,23 @@ export default async function TransactionsPage({
         <FilterBar categories={filterCategories} accounts={accountsList} />
       </Suspense>
 
-      {/* Month summary */}
+      {/* Month / billing summary */}
       <MotionList className="grid grid-cols-3 gap-2 sm:gap-4">
         <MotionItem className="min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
-            Income
+            {isBillingView ? "Refunds" : "Income"}
           </p>
           <AnimatedNumber value={income} className="mt-0.5 block truncate font-mono text-sm font-bold text-green-500 sm:text-lg" />
         </MotionItem>
         <MotionItem className="min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
-            Expenses
+            {isBillingView ? "Charges" : "Expenses"}
           </p>
           <AnimatedNumber value={expenses} className="mt-0.5 block truncate font-mono text-sm font-bold text-red-500 sm:text-lg" />
         </MotionItem>
         <MotionItem className="min-w-0 overflow-hidden rounded-lg border border-border bg-card px-3 py-2 sm:px-4 sm:py-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground sm:text-xs">
-            Balance
+            {isBillingView ? "Total Billed" : "Balance"}
           </p>
           <AnimatedNumber
             value={income - expenses}
@@ -217,7 +281,7 @@ export default async function TransactionsPage({
 
       {txns.length === 0 ? (
         <div className="rounded-lg border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
-          No transactions for {monthLabel(year, month)}.
+          No transactions for {isBillingView && activeBillingDay ? billingDateLabel(year, month, activeBillingDay) : monthLabel(year, month)}.
         </div>
       ) : (
         <>

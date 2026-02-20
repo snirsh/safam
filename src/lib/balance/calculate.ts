@@ -75,11 +75,11 @@ export async function calculateBankBalance(
  * These charges will be debited from the bank on ~Mar 2.
  * Falls back to calendar month if billingDay is null.
  */
-const getBillingCycleBounds = (
+export function getBillingCycleBounds(
   billingDay: number | null,
   monthStart: Date,
   monthEnd: Date,
-): { cycleStart: Date; cycleEnd: Date } => {
+): { cycleStart: Date; cycleEnd: Date } {
   if (billingDay === null) {
     return { cycleStart: monthStart, cycleEnd: monthEnd };
   }
@@ -92,7 +92,7 @@ const getBillingCycleBounds = (
   const cycleEnd = new Date(year, month + 1, billingDay + 1);
 
   return { cycleStart, cycleEnd };
-};
+}
 
 /**
  * Calculate CC liability for the current billing cycle:

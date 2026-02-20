@@ -41,6 +41,7 @@ export interface ForecastResult {
   projectedEndOfMonth: number;
   isSafe: boolean;
   ccLiability: number;
+  ccAccounts: Array<{ accountId: string; accountName: string; liability: number }>;
   totalPendingBankIncome: number;
   totalPendingBankExpenses: number;
   dataPoints: ForecastDataPoint[];
@@ -66,11 +67,8 @@ export async function calculateForecast(
   const { totalBalance: bankBalance } = await calculateBankBalance(householdId);
 
   // 2. CC liability this month
-  const { totalLiability: ccLiability } = await calculateCCLiability(
-    householdId,
-    monthStart,
-    monthEnd,
-  );
+  const { totalLiability: ccLiability, accounts: ccAccounts } =
+    await calculateCCLiability(householdId, monthStart, monthEnd);
 
   // 3. Fetch active recurring patterns with category + account info
   const parentCategories = alias(categories, "parent_categories");
@@ -233,6 +231,7 @@ export async function calculateForecast(
     projectedEndOfMonth,
     isSafe: projectedEndOfMonth >= 0,
     ccLiability,
+    ccAccounts,
     totalPendingBankIncome,
     totalPendingBankExpenses,
     dataPoints,

@@ -41,6 +41,16 @@ export function monthLabel(year: number, month: number): string {
   });
 }
 
+/** Label for a CC billing date: "Billed Mar 2, 2026" (month is 0-indexed). */
+export function billingDateLabel(
+  year: number,
+  month: number,
+  billingDay: number,
+): string {
+  const billingDate = new Date(year, month + 1, billingDay);
+  return `Billed ${billingDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+}
+
 export function getMonthBounds(
   year: number,
   month: number,

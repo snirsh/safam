@@ -225,12 +225,17 @@ export default async function DashboardPage() {
           />
         </MotionItem>
         <MotionItem>
-          <SummaryCard
-            label="CC Pending"
-            value={forecast.ccLiability}
-            variant="muted"
-            detail="hits bank next month"
-          />
+          <Link
+            href={`/transactions?view=billing${forecast.ccAccounts.length === 1 ? `&account=${forecast.ccAccounts[0]!.accountId}` : ""}`}
+            className="block transition-opacity hover:opacity-80"
+          >
+            <SummaryCard
+              label="CC Pending"
+              value={forecast.ccLiability}
+              variant="muted"
+              detail="view billing cycle →"
+            />
+          </Link>
         </MotionItem>
       </MotionList>
 
